@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ONE&ONE 恒旺国际 · 品质生活商城</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#C9A84C;--gold-light:#E8C97A;--gold-pale:#F5EDD3;
+  --deep:#1A1410;--dark:#2B2218;--mid:#4A3D30;--warm:#7A6850;
+  --cream:#FAF7F0;--white:#FFFFFF;--text:#2B2218;--text-muted:#7A6850;
+  --border:rgba(201,168,76,0.18);--radius:10px;--radius-sm:6px;
+  --sidebar:260px;--header:60px;
+  --success:#2D8C5F;--error:#C0392B;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden;}
+img{max-width:100%;display:block;}
+button,input,select,textarea{font-family:inherit;}
+button{cursor:pointer;}
+
+/* ===== UTILS ===== */
+.hidden{display:none!important;}
+.flex{display:flex;}
+.items-center{align-items:center;}
+.justify-between{justify-content:space-between;}
+.gap-1{gap:.5rem;}.gap-2{gap:1rem;}.gap-3{gap:1.5rem;}
+.text-gold{color:var(--gold);}
+.text-muted{color:var(--text-muted);}
+.serif{font-family:'Playfair Display',serif;}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.04em;}
+.badge-green{background:#E8F5EE;color:var(--success);}
+.badge-gold{background:var(--gold-pale);color:var(--mid);}
+.badge-red{background:#FDECEA;color:var(--error);}
+.toast{position:fixed;bottom:2rem;right:2rem;z-index:9999;background:var(--deep);color:var(--white);padding:12px 20px;border-radius:var(--radius-sm);font-size:.85rem;border-left:3px solid var(--gold);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:none;opacity:1;}
+
+/* ===== SCREENS ===== */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:block;}
+#authScreen.active{display:flex!important;}
+
+/* Nav login btn */
+.nav-login-btn{background:transparent;border:1px solid rgba(201,168,76,0.5);color:var(--gold);padding:7px 18px;border-radius:4px;font-size:.82rem;font-weight:500;cursor:pointer;letter-spacing:.03em;transition:all .2s;}
+.nav-login-btn:hover{background:var(--gold);color:var(--deep);}
+.auth-modal-close{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.5);width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.auth-modal-close:hover{background:rgba(255,255,255,0.15);color:var(--white);}
+
+/* Product card qty controls */
+.prod-qty-ctrl{display:flex;align-items:center;gap:0;}
+.prod-qty-ctrl button{width:30px;height:30px;border:1px solid rgba(0,0,0,.12);background:var(--white);font-size:1rem;font-weight:600;color:var(--text);transition:all .2s;flex-shrink:0;}
+.prod-qty-ctrl button:first-child{border-radius:4px 0 0 4px;}
+.prod-qty-ctrl button:last-child{border-radius:0 4px 4px 0;background:var(--gold);border-color:var(--gold);color:var(--deep);}
+.prod-qty-ctrl button:last-child:hover{background:var(--gold-light);}
+.prod-qty-ctrl button:first-child:hover{background:var(--cream);}
+.prod-qty-num{width:32px;height:30px;text-align:center;border-top:1px solid rgba(0,0,0,.12);border-bottom:1px solid rgba(0,0,0,.12);font-size:.85rem;font-weight:700;line-height:30px;background:var(--white);color:var(--text);}
+
+/* ===== AUTH SCREEN ===== */
+#authScreen{
+  background:linear-gradient(150deg,var(--deep) 0%,#2B1A0A 50%,#1A1410 100%);
+  display:flex;align-items:center;justify-content:center;
+  padding:2rem;
+}
+.auth-box{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(201,168,76,0.2);
+  border-radius:16px;padding:2.5rem;
+  width:100%;max-width:420px;
+  backdrop-filter:blur(20px);
+}
+.auth-logo{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--gold);text-align:center;margin-bottom:.25rem;}
+.auth-logo-sub{font-size:.65rem;letter-spacing:.2em;color:rgba(255,255,255,0.35);text-align:center;margin-bottom:2rem;}
+.auth-title{font-size:1.1rem;font-weight:600;color:var(--white);text-align:center;margin-bottom:.4rem;}
+.auth-sub{font-size:.8rem;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:2rem;}
+.social-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:.75rem;
+  padding:13px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);
+  font-size:.88rem;font-weight:500;margin-bottom:.75rem;
+  transition:all .2s;
+}
+.social-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.25);}
+.social-btn svg{flex-shrink:0;}
+.auth-divider{display:flex;align-items:center;gap:1rem;margin:1.25rem 0;color:rgba(255,255,255,0.2);font-size:.75rem;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.08);}
+.auth-input{
+  width:100%;padding:12px 16px;background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.1);border-radius:8px;
+  color:var(--white);font-size:.9rem;margin-bottom:.75rem;
+  transition:border .2s;
+}
+.auth-input::placeholder{color:rgba(255,255,255,0.3);}
+.auth-input:focus{outline:none;border-color:rgba(201,168,76,0.5);}
+.auth-btn{
+  width:100%;padding:13px;background:var(--gold);border:none;
+  border-radius:8px;color:var(--deep);font-size:.9rem;font-weight:600;
+  letter-spacing:.03em;transition:background .2s;
+}
+.auth-btn:hover{background:var(--gold-light);}
+.auth-toggle{text-align:center;margin-top:1.25rem;font-size:.8rem;color:rgba(255,255,255,0.4);}
+.auth-toggle a{color:var(--gold);cursor:pointer;text-decoration:none;}
+.auth-admin-link{text-align:center;margin-top:1rem;font-size:.72rem;color:rgba(255,255,255,0.25);cursor:pointer;}
+.auth-admin-link:hover{color:var(--gold);}
+
+/* ===== SHOP HEADER ===== */
+.shop-header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(26,20,16,0.96);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(201,168,76,0.12);
+  padding:0 5vw;height:var(--header);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.sh-logo{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--gold);text-decoration:none;cursor:pointer;}
+.sh-logo span{color:rgba(255,255,255,0.35);font-size:.55rem;letter-spacing:.18em;display:block;font-family:'DM Sans',sans-serif;}
+.sh-nav{display:flex;gap:1.5rem;list-style:none;}
+.sh-nav a{color:rgba(255,255,255,0.6);text-decoration:none;font-size:.82rem;letter-spacing:.04em;cursor:pointer;transition:color .2s;padding:.25rem 0;border-bottom:2px solid transparent;}
+.sh-nav a.active,.sh-nav a:hover{color:var(--gold);border-bottom-color:var(--gold);}
+.sh-right{display:flex;align-items:center;gap:1rem;}
+.sh-user{display:flex;align-items:center;gap:.5rem;color:rgba(255,255,255,0.6);font-size:.8rem;cursor:pointer;}
+.sh-avatar{width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--deep);}
+.cart-btn{position:relative;background:none;border:none;color:rgba(255,255,255,0.7);padding:.4rem;cursor:pointer;}
+.cart-count{position:absolute;top:-2px;right:-4px;background:var(--gold);color:var(--deep);font-size:.55rem;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.ham-btn{display:none;background:none;border:none;color:var(--gold);flex-direction:column;gap:4px;padding:.5rem;}
+.ham-btn span{width:22px;height:1.5px;background:currentColor;display:block;}
+
+/* ===== SHOP HOME ===== */
+.shop-hero{
+  background:linear-gradient(160deg,var(--deep),#2B1A0A 60%,#3A2210);
+  padding:80px 5vw 60px;text-align:center;
+}
+.shop-hero h1{font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3.5rem);color:var(--white);font-weight:700;line-height:1.2;margin-bottom:.75rem;}
+.shop-hero h1 em{color:var(--gold);font-style:normal;}
+.shop-hero p{color:rgba(255,255,255,0.45);font-size:.95rem;margin-bottom:2.5rem;}
+.category-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;padding:2.5rem 5vw;max-width:1200px;margin:0 auto;}
+.cat-card{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.06);padding:1.75rem 1.5rem;text-align:center;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
+.cat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+.cat-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.09);}
+.cat-card:hover::after{transform:scaleX(1);}
+.cat-icon{font-size:2.2rem;margin-bottom:1rem;}
+.cat-name{font-weight:700;font-size:1rem;margin-bottom:.2rem;}
+.cat-en{font-size:.65rem;letter-spacing:.12em;color:var(--text-muted);}
+.cat-count{font-size:.75rem;color:var(--gold);margin-top:.5rem;font-weight:600;}
+.products-section{padding:0 5vw 4rem;max-width:1200px;margin:0 auto;}
+.products-header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem 0 1.25rem;}
+.products-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:600;}
+.filter-bar{display:flex;gap:.5rem;flex-wrap:wrap;}
+.filter-btn{padding:6px 14px;border-radius:4px;border:1px solid rgba(0,0,0,.1);background:transparent;font-size:.75rem;color:var(--text-muted);transition:all .2s;cursor:pointer;}
+.filter-btn.active,.filter-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--deep);font-weight:600;}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.25rem;}
+.prod-card{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.05);overflow:hidden;cursor:pointer;transition:all .25s;}
+.prod-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.1);}
+.prod-img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--cream);}
+.prod-img-placeholder{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#f5f0e8,#ede5d4);}
+.prod-body{padding:1rem;}
+.prod-cat{font-size:.62rem;letter-spacing:.12em;color:var(--gold);margin-bottom:.3rem;text-transform:uppercase;}
+.prod-name{font-weight:600;font-size:.9rem;margin-bottom:.4rem;line-height:1.3;}
+.prod-desc{font-size:.75rem;color:var(--text-muted);line-height:1.5;margin-bottom:.75rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.prod-foot{display:flex;align-items:center;justify-content:space-between;}
+.prod-price{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--gold);}
+.prod-price-orig{font-size:.72rem;color:var(--text-muted);text-decoration:line-through;margin-left:.3rem;}
+.add-cart-btn{background:var(--deep);color:var(--white);border:none;padding:7px 14px;border-radius:4px;font-size:.75rem;font-weight:500;transition:background .2s;}
+.add-cart-btn:hover{background:var(--gold);color:var(--deep);}
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--text-muted);}
+.empty-state .ei{font-size:3rem;margin-bottom:1rem;}
+.empty-state h3{font-size:1.1rem;margin-bottom:.5rem;color:var(--text);}
+
+/* ===== PRODUCT MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity .25s;pointer-events:none;}
+.modal-overlay.open{opacity:1;pointer-events:auto;}
+.modal-box{background:var(--white);border-radius:16px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform .25s;}
+.modal-overlay.open .modal-box{transform:none;}
+.modal-img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--cream);}
+.modal-img-ph{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:5rem;background:linear-gradient(135deg,#f5f0e8,#ede5d4);}
+.modal-body{padding:2rem;}
+.modal-cat{font-size:.65rem;letter-spacing:.18em;color:var(--gold);margin-bottom:.5rem;}
+.modal-name{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;margin-bottom:1rem;line-height:1.2;}
+.modal-desc{font-size:.9rem;color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem;}
+.modal-price-row{display:flex;align-items:baseline;gap:.75rem;margin-bottom:1.5rem;}
+.modal-price{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--gold);}
+.modal-orig{font-size:.9rem;color:var(--text-muted);text-decoration:line-through;}
+.qty-row{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;}
+.qty-ctrl{display:flex;align-items:center;border:1px solid rgba(0,0,0,.12);border-radius:6px;overflow:hidden;}
+.qty-ctrl button{background:none;border:none;width:36px;height:36px;font-size:1.1rem;color:var(--text);transition:background .2s;}
+.qty-ctrl button:hover{background:var(--cream);}
+.qty-ctrl span{width:40px;text-align:center;font-weight:600;font-size:.9rem;}
+.modal-add-btn{flex:1;padding:12px 24px;background:var(--gold);border:none;border-radius:6px;font-size:.9rem;font-weight:600;color:var(--deep);transition:background .2s;}
+.modal-add-btn:hover{background:var(--gold-light);}
+.modal-close{position:absolute;top:1rem;right:1rem;background:rgba(0,0,0,.5);border:none;width:36px;height:36px;border-radius:50%;color:var(--white);font-size:1.1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;}
+
+/* ===== CART DRAWER ===== */
+.cart-drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:100vw;background:var(--white);z-index:300;transform:translateX(100%);transition:transform .3s;display:flex;flex-direction:column;box-shadow:-4px 0 40px rgba(0,0,0,.15);}
+.cart-drawer.open{transform:none;}
+.cart-head{padding:1.25rem 1.5rem;border-bottom:1px solid rgba(0,0,0,.07);display:flex;align-items:center;justify-content:space-between;}
+.cart-head h3{font-family:'Playfair Display',serif;font-size:1.2rem;}
+.cart-close{background:none;border:none;font-size:1.3rem;color:var(--text-muted);cursor:pointer;}
+.cart-items{flex:1;overflow-y:auto;padding:1rem 1.5rem;}
+.cart-item{display:flex;gap:1rem;padding:1rem 0;border-bottom:1px solid rgba(0,0,0,.05);}
+.cart-item-img{width:64px;height:64px;object-fit:cover;border-radius:6px;background:var(--cream);flex-shrink:0;}
+.cart-item-img-ph{width:64px;height:64px;border-radius:6px;background:linear-gradient(135deg,#f5f0e8,#ede5d4);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;}
+.cart-item-info{flex:1;}
+.cart-item-name{font-size:.85rem;font-weight:600;margin-bottom:.25rem;line-height:1.3;}
+.cart-item-price{font-size:.82rem;color:var(--gold);font-weight:600;}
+.cart-item-controls{display:flex;align-items:center;gap:.5rem;margin-top:.4rem;}
+.ci-qty{display:flex;align-items:center;gap:.25rem;}
+.ci-qty button{background:rgba(0,0,0,.06);border:none;width:22px;height:22px;border-radius:3px;font-size:.8rem;color:var(--text);}
+.ci-qty span{font-size:.8rem;font-weight:600;min-width:20px;text-align:center;}
+.ci-remove{background:none;border:none;font-size:.72rem;color:var(--error);cursor:pointer;margin-left:.25rem;}
+.cart-foot{padding:1.25rem 1.5rem;border-top:1px solid rgba(0,0,0,.07);}
+.cart-total-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1rem;}
+.cart-total-label{font-size:.85rem;color:var(--text-muted);}
+.cart-total-price{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--gold);}
+.checkout-btn{width:100%;padding:14px;background:var(--gold);border:none;border-radius:6px;font-size:.9rem;font-weight:700;color:var(--deep);letter-spacing:.04em;transition:background .2s;}
+.checkout-btn:hover{background:var(--gold-light);}
+.cart-empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);}
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:299;display:none;}
+.cart-overlay.open{display:block;}
+
+/* ===== CHECKOUT ===== */
+.checkout-wrap{max-width:900px;margin:0 auto;padding:2rem 5vw 4rem;}
+.checkout-title{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:600;margin-bottom:2rem;}
+.checkout-grid{display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start;}
+.checkout-section{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.06);padding:1.75rem;margin-bottom:1.25rem;}
+.cs-title{font-weight:700;font-size:.95rem;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid rgba(0,0,0,.06);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;}
+.form-row.full{grid-template-columns:1fr;}
+.form-group{display:flex;flex-direction:column;gap:.3rem;}
+.form-label{font-size:.75rem;font-weight:600;color:var(--text-muted);letter-spacing:.04em;}
+.form-input{padding:10px 14px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.88rem;color:var(--text);transition:border .2s;}
+.form-input:focus{outline:none;border-color:var(--gold);}
+.order-summary-box{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.06);padding:1.75rem;position:sticky;top:80px;}
+.os-title{font-weight:700;font-size:.95rem;margin-bottom:1.25rem;}
+.os-items{display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem;}
+.os-item{display:flex;justify-content:space-between;font-size:.83rem;}
+.os-item-name{color:var(--text-muted);flex:1;padding-right:1rem;}
+.os-item-price{font-weight:600;}
+.os-divider{border:none;border-top:1px solid rgba(0,0,0,.07);margin:1rem 0;}
+.os-total{display:flex;justify-content:space-between;align-items:baseline;}
+.os-total-label{font-weight:600;}
+.os-total-price{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--gold);}
+.place-order-btn{width:100%;padding:14px;background:var(--gold);border:none;border-radius:6px;font-size:.9rem;font-weight:700;color:var(--deep);margin-top:1.25rem;transition:background .2s;}
+.place-order-btn:hover{background:var(--gold-light);}
+.security-note{font-size:.7rem;color:var(--text-muted);text-align:center;margin-top:.75rem;}
+
+/* ===== ADMIN ===== */
+#adminScreen{display:flex;min-height:100vh;background:#F0EDE8;}
+.admin-sidebar{width:var(--sidebar);background:var(--deep);flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:10;}
+.admin-logo{padding:1.5rem;border-bottom:1px solid rgba(201,168,76,0.1);}
+.admin-logo-text{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--gold);}
+.admin-logo-sub{font-size:.6rem;letter-spacing:.15em;color:rgba(255,255,255,0.25);margin-top:2px;}
+.admin-nav{flex:1;padding:1rem 0;}
+.admin-nav-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.5rem;color:rgba(255,255,255,0.5);font-size:.83rem;cursor:pointer;transition:all .2s;border-left:3px solid transparent;}
+.admin-nav-item:hover{background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.8);}
+.admin-nav-item.active{background:rgba(201,168,76,0.08);color:var(--gold);border-left-color:var(--gold);}
+.admin-nav-icon{font-size:1rem;width:20px;text-align:center;}
+.admin-footer{padding:1rem 1.5rem;border-top:1px solid rgba(255,255,255,0.05);}
+.admin-logout{background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);padding:8px 16px;border-radius:4px;font-size:.78rem;width:100%;cursor:pointer;transition:all .2s;}
+.admin-logout:hover{border-color:var(--error);color:var(--error);}
+.admin-main{margin-left:var(--sidebar);flex:1;padding:2rem;min-width:0;}
+.admin-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;}
+.admin-page-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:600;}
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem;}
+.stat-card{background:var(--white);border-radius:var(--radius);padding:1.5rem;border:1px solid rgba(0,0,0,.05);}
+.stat-label{font-size:.72rem;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.5rem;}
+.stat-value{font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:700;}
+.stat-change{font-size:.72rem;margin-top:.3rem;}
+.stat-change.up{color:var(--success);}
+.stat-change.down{color:var(--error);}
+
+/* Product Table */
+.admin-card{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.05);overflow:hidden;}
+.admin-card-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid rgba(0,0,0,.06);}
+.admin-card-title{font-weight:700;font-size:.95rem;}
+.admin-btn{padding:8px 18px;border-radius:4px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;border:none;}
+.admin-btn-gold{background:var(--gold);color:var(--deep);}
+.admin-btn-gold:hover{background:var(--gold-light);}
+.admin-btn-outline{background:transparent;border:1px solid rgba(0,0,0,.15);color:var(--text);}
+.admin-btn-outline:hover{background:rgba(0,0,0,.04);}
+.admin-btn-danger{background:transparent;border:1px solid var(--error);color:var(--error);}
+.admin-btn-danger:hover{background:#FDECEA;}
+.admin-search{display:flex;align-items:center;gap:.75rem;}
+.admin-search input{padding:8px 14px;border:1px solid rgba(0,0,0,.1);border-radius:4px;font-size:.82rem;width:200px;}
+.admin-search input:focus{outline:none;border-color:var(--gold);}
+.filter-select{padding:8px 12px;border:1px solid rgba(0,0,0,.1);border-radius:4px;font-size:.82rem;background:var(--white);}
+.filter-select:focus{outline:none;border-color:var(--gold);}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:.7rem;letter-spacing:.08em;color:var(--text-muted);padding:.75rem 1.25rem;border-bottom:1px solid rgba(0,0,0,.06);font-weight:600;}
+td{padding:.9rem 1.25rem;font-size:.83rem;border-bottom:1px solid rgba(0,0,0,.04);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,0,0,.01);}
+.td-img{width:44px;height:44px;object-fit:cover;border-radius:6px;background:var(--cream);}
+.td-img-ph{width:44px;height:44px;border-radius:6px;background:linear-gradient(135deg,#f5f0e8,#ede5d4);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.td-actions{display:flex;gap:.4rem;}
+.td-btn{padding:5px 12px;border-radius:3px;font-size:.72rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+.td-edit{background:rgba(201,168,76,0.1);color:var(--mid);}
+.td-edit:hover{background:var(--gold);color:var(--deep);}
+.td-del{background:#FDECEA;color:var(--error);}
+.td-del:hover{background:var(--error);color:var(--white);}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid rgba(0,0,0,.06);}
+.page-info{font-size:.78rem;color:var(--text-muted);}
+.page-btns{display:flex;gap:.4rem;}
+.page-btn{padding:5px 10px;border:1px solid rgba(0,0,0,.1);border-radius:3px;font-size:.75rem;background:var(--white);cursor:pointer;transition:all .2s;}
+.page-btn.active,.page-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--deep);font-weight:600;}
+
+/* Product Form Modal */
+.form-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.form-modal{background:var(--white);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;}
+.fm-header{padding:1.5rem 2rem;border-bottom:1px solid rgba(0,0,0,.07);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1;}
+.fm-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:600;}
+.fm-close{background:none;border:none;font-size:1.2rem;color:var(--text-muted);cursor:pointer;}
+.fm-body{padding:2rem;}
+.fm-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.fm-row.full{grid-template-columns:1fr;}
+.fm-group{display:flex;flex-direction:column;gap:.35rem;}
+.fm-label{font-size:.75rem;font-weight:600;color:var(--text-muted);letter-spacing:.04em;}
+.fm-label em{color:var(--error);}
+.fm-input{padding:10px 14px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.88rem;color:var(--text);transition:border .2s;}
+.fm-input:focus{outline:none;border-color:var(--gold);}
+.fm-select{padding:10px 14px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.88rem;color:var(--text);background:var(--white);}
+.fm-select:focus{outline:none;border-color:var(--gold);}
+.fm-textarea{padding:10px 14px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.88rem;color:var(--text);resize:vertical;min-height:80px;transition:border .2s;}
+.fm-textarea:focus{outline:none;border-color:var(--gold);}
+.img-upload-area{border:2px dashed rgba(0,0,0,.12);border-radius:8px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.img-upload-area:hover{border-color:var(--gold);background:var(--gold-pale);}
+.img-upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.img-upload-icon{font-size:2rem;margin-bottom:.5rem;color:var(--text-muted);}
+.img-upload-text{font-size:.82rem;color:var(--text-muted);}
+.img-preview{width:100%;height:160px;object-fit:cover;border-radius:6px;margin-top:1rem;}
+.fm-footer{display:flex;gap:.75rem;justify-content:flex-end;padding:1.25rem 2rem;border-top:1px solid rgba(0,0,0,.07);}
+.toggle-wrap{display:flex;align-items:center;gap:.75rem;}
+.toggle{width:40px;height:22px;background:rgba(0,0,0,.15);border-radius:11px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.toggle.on{background:var(--gold);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--white);transition:transform .2s;}
+.toggle.on::after{transform:translateX(18px);}
+.toggle-label{font-size:.83rem;color:var(--text);}
+
+/* Orders */
+.orders-table-wrap{overflow-x:auto;}
+.order-status{padding:3px 10px;border-radius:3px;font-size:.7rem;font-weight:600;letter-spacing:.04em;}
+.os-pending{background:#FEF3CD;color:#7A5C00;}
+.os-processing{background:#E8F0FE;color:#2B5BE0;}
+.os-shipped{background:#E8F5EE;color:var(--success);}
+.os-completed{background:#E8F5EE;color:var(--success);}
+.os-cancelled{background:#FDECEA;color:var(--error);}
+
+/* Mobile Nav */
+.mobile-nav{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,20,16,0.98);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;}
+.mobile-nav.open{display:flex;}
+.mobile-nav a{color:rgba(255,255,255,0.8);font-size:1.2rem;text-decoration:none;cursor:pointer;}
+.mobile-nav a:hover{color:var(--gold);}
+.mobile-nav-close{position:absolute;top:1.5rem;right:1.5rem;background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.5rem;cursor:pointer;}
+
+/* Responsive */
+@media(max-width:900px){
+  .category-strip{grid-template-columns:repeat(2,1fr);}
+  .checkout-grid{grid-template-columns:1fr;}
+  .order-summary-box{position:static;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .admin-sidebar{transform:translateX(-100%);transition:transform .3s;}
+  .admin-sidebar.open{transform:none;}
+  .admin-main{margin-left:0;}
+  .sh-nav{display:none;}
+  .ham-btn{display:flex;}
+}
+@media(max-width:600px){
+  .category-strip{grid-template-columns:1fr 1fr;gap:.75rem;padding:1.5rem 4vw;}
+  .checkout-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .fm-row{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .product-grid{grid-template-columns:repeat(2,1fr);gap:.75rem;}
+  .cat-card{padding:1.25rem 1rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== AUTH MODAL ===== -->
+<div class="screen" id="authScreen" style="position:fixed;inset:0;z-index:500;background:rgba(10,6,4,0.88);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:1rem;min-height:0;">
+  <div class="auth-box" style="position:relative;">
+    <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
+    <div class="auth-logo">ONE&amp;ONE</div>
+    <div class="auth-logo-sub">恒旺国际 · 品质生活商城</div>
+    <div id="authLogin">
+      <div class="auth-title">Welcome back</div>
+      <div class="auth-sub">登录您的账户继续购物</div>
+      <button class="social-btn" onclick="socialLogin('Google')">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.962L3.964 6.294C4.672 4.167 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+      <button class="social-btn" onclick="socialLogin('Apple')">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M14.048 9.368c-.02-1.98 1.622-2.944 1.694-2.99--.924-1.35-2.36-1.535-2.87-1.552-1.22-.124-2.384.72-3.002.72-.618 0-1.573-.704-2.587-.684-1.327.02-2.558.773-3.24 1.96-1.387 2.4-.354 5.962 1 7.908.667.956 1.462 2.032 2.503 1.994 1.007-.04 1.386-.648 2.603-.648 1.217 0 1.558.648 2.616.628 1.083-.02 1.766-.977 2.428-1.937.768-1.107 1.082-2.19 1.1-2.244-.024-.01-2.1-.806-2.123-3.155zm-1.99-5.797c.553-.67.927-1.596.824-2.521-.796.033-1.76.53-2.33 1.199-.51.59-.959 1.53-.84 2.435.89.069 1.793-.453 2.346-1.113z"/></svg>
+        Continue with Apple
+      </button>
+      <button class="social-btn" onclick="socialLogin('Facebook')">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#1877F2" d="M18 9a9 9 0 10-10.406 8.892V11.62H5.31V9h2.284V7.01c0-2.254 1.343-3.5 3.397-3.5.984 0 2.013.176 2.013.176V5.9h-1.134c-1.117 0-1.466.693-1.466 1.404V9h2.495l-.399 2.62H10.4v6.272A9.003 9.003 0 0018 9z"/></svg>
+        Continue with Facebook
+      </button>
+      <div class="auth-divider">或使用邮箱</div>
+      <input class="auth-input" type="email" id="loginEmail" placeholder="邮箱地址" />
+      <input class="auth-input" type="password" id="loginPwd" placeholder="密码" />
+      <button class="auth-btn" onclick="emailLogin()">登录</button>
+      <div class="auth-toggle">还没有账户？<a onclick="switchAuthMode('register')">立即注册</a></div>
+    </div>
+    <div id="authRegister" class="hidden">
+      <div class="auth-title">创建账户</div>
+      <div class="auth-sub">注册获得专属会员权益</div>
+      <input class="auth-input" type="text" id="regName" placeholder="姓名" />
+      <input class="auth-input" type="email" id="regEmail" placeholder="邮箱地址" />
+      <input class="auth-input" type="password" id="regPwd" placeholder="密码（至少6位）" />
+      <button class="auth-btn" onclick="emailRegister()">注册</button>
+      <div class="auth-toggle">已有账户？<a onclick="switchAuthMode('login')">返回登录</a></div>
+    </div>
+    <div class="auth-admin-link" onclick="adminLogin()">⚙ 管理员后台入口</div>
+  </div>
+</div>
+
+<!-- ===== SHOP SCREEN ===== -->
+<div class="screen active" id="shopScreen">
+  <!-- Header -->
+  <header class="shop-header">
+    <a class="sh-logo" onclick="showPage('home')">ONE&amp;ONE<span>恒旺国际</span></a>
+    <ul class="sh-nav">
+      <li><a onclick="showPage('home')" data-page="home">首页</a></li>
+      <li><a onclick="showCategory('wine')" data-page="wine">🍷 红酒</a></li>
+      <li><a onclick="showCategory('health')" data-page="health">💊 大健康</a></li>
+      <li><a onclick="showCategory('beauty')" data-page="beauty">✨ 美妆护肤</a></li>
+      <li><a onclick="showCategory('food')" data-page="food">🌿 功能性食品</a></li>
+    </ul>
+    <div class="sh-right">
+      <button class="cart-btn" onclick="toggleCart()">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <div id="headerGuest">
+        <button class="nav-login-btn" onclick="openAuthModal()">登录 / 注册</button>
+      </div>
+      <div id="headerUser" style="display:none;position:relative;">
+        <div class="sh-user" onclick="toggleUserDropdown()">
+          <div class="sh-avatar" id="userAvatar">U</div>
+          <span id="userNameDisplay" style="color:rgba(255,255,255,0.6);font-size:.78rem;"></span>
+          <span style="color:rgba(255,255,255,0.3);font-size:.65rem;margin-left:.2rem;">▾</span>
+        </div>
+        <div id="userDropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--deep);border:1px solid rgba(201,168,76,0.2);border-radius:8px;min-width:140px;overflow:hidden;z-index:100;">
+          <div style="padding:.6rem 1rem;font-size:.78rem;color:rgba(255,255,255,0.35);border-bottom:1px solid rgba(255,255,255,0.06);" id="dropUserEmail"></div>
+          <button onclick="logout()" style="width:100%;text-align:left;padding:.7rem 1rem;background:none;border:none;color:rgba(255,255,255,0.6);font-size:.82rem;cursor:pointer;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">退出登录</button>
+        </div>
+      </div>
+      <button class="ham-btn" onclick="toggleMobileNav()"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <!-- Mobile Nav -->
+  <div class="mobile-nav" id="mobileNav">
+    <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
+    <a onclick="showPage('home');toggleMobileNav()">首页</a>
+    <a onclick="showCategory('wine');toggleMobileNav()">🍷 红酒</a>
+    <a onclick="showCategory('health');toggleMobileNav()">💊 大健康</a>
+    <a onclick="showCategory('beauty');toggleMobileNav()">✨ 美妆护肤</a>
+    <a onclick="showCategory('food');toggleMobileNav()">🌿 功能性食品</a>
+    <a onclick="toggleCart();toggleMobileNav()" style="color:var(--gold);">🛒 购物车</a>
+    <a id="mobileLoginLink" onclick="openAuthModal();toggleMobileNav()" style="color:rgba(255,255,255,0.5);font-size:.9rem;">登录 / 注册</a>
+    <a id="mobileLogoutLink" onclick="logout();toggleMobileNav()" style="display:none;color:rgba(255,255,255,0.4);font-size:.85rem;">退出登录</a>
+  </div>
+
+  <!-- HOME PAGE -->
+  <div id="page-home">
+    <div class="shop-hero">
+      <h1>澳洲<em>品质生活</em>精选<br>直达您的餐桌</h1>
+      <p>源头直供 · 假一赔千 · 官方授权 · 全程冷链</p>
+    </div>
+    <div class="category-strip">
+      <div class="cat-card" onclick="showCategory('wine')">
+        <div class="cat-icon">🍷</div>
+        <div class="cat-name">澳洲进口红酒</div>
+        <div class="cat-en">AUSTRALIAN RED WINE</div>
+        <div class="cat-count" id="cat-count-wine">— 款</div>
+      </div>
+      <div class="cat-card" onclick="showCategory('health')">
+        <div class="cat-icon">💊</div>
+        <div class="cat-name">大健康保健品</div>
+        <div class="cat-en">HEALTH SUPPLEMENTS</div>
+        <div class="cat-count" id="cat-count-health">— 款</div>
+      </div>
+      <div class="cat-card" onclick="showCategory('beauty')">
+        <div class="cat-icon">✨</div>
+        <div class="cat-name">美妆护肤</div>
+        <div class="cat-en">BEAUTY & SKINCARE</div>
+        <div class="cat-count" id="cat-count-beauty">— 款</div>
+      </div>
+      <div class="cat-card" onclick="showCategory('food')">
+        <div class="cat-icon">🌿</div>
+        <div class="cat-name">功能性食品</div>
+        <div class="cat-en">FUNCTIONAL FOODS</div>
+        <div class="cat-count" id="cat-count-food">— 款</div>
+      </div>
+    </div>
+    <div class="products-section">
+      <div class="products-header">
+        <h2 class="products-title">全部商品</h2>
+        <div class="filter-bar" id="homeFilter">
+          <button class="filter-btn active" onclick="filterHome('all',this)">全部</button>
+          <button class="filter-btn" onclick="filterHome('wine',this)">红酒</button>
+          <button class="filter-btn" onclick="filterHome('health',this)">大健康</button>
+          <button class="filter-btn" onclick="filterHome('beauty',this)">美妆</button>
+          <button class="filter-btn" onclick="filterHome('food',this)">功能食品</button>
+        </div>
+      </div>
+      <div class="product-grid" id="homeProductGrid"></div>
+    </div>
+  </div>
+
+  <!-- CATEGORY PAGE -->
+  <div id="page-category" class="hidden">
+    <div class="shop-hero" id="catHero" style="padding:50px 5vw 40px;">
+      <div style="font-size:.65rem;letter-spacing:.25em;color:var(--gold);margin-bottom:.75rem;" id="catLabel"></div>
+      <h1 id="catTitle" style="font-size:clamp(1.5rem,4vw,2.5rem);"></h1>
+      <p id="catSub"></p>
+    </div>
+    <div class="products-section">
+      <div class="products-header">
+        <h2 class="products-title" id="catProductTitle"></h2>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <select class="filter-select" id="catSort" onchange="sortProducts()">
+            <option value="default">默认排序</option>
+            <option value="price-asc">价格从低到高</option>
+            <option value="price-desc">价格从高到低</option>
+          </select>
+        </div>
+      </div>
+      <div class="product-grid" id="catProductGrid"></div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT PAGE -->
+  <div id="page-checkout" class="hidden">
+    <div class="checkout-wrap">
+      <div class="checkout-title">结算 · Checkout</div>
+      <div class="checkout-grid">
+        <div>
+          <div class="checkout-section">
+            <div class="cs-title">收货信息</div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">姓名</label><input class="form-input" placeholder="收件人姓名" id="ck-name"/></div>
+              <div class="form-group"><label class="form-label">手机</label><input class="form-input" placeholder="手机号码" id="ck-phone"/></div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group"><label class="form-label">省市区</label><input class="form-input" placeholder="例：广东省深圳市南山区" id="ck-city"/></div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group"><label class="form-label">详细地址</label><input class="form-input" placeholder="街道、小区、门牌号" id="ck-addr"/></div>
+            </div>
+          </div>
+          <div class="checkout-section">
+            <div class="cs-title">支付方式</div>
+            <div style="display:flex;flex-direction:column;gap:.6rem;">
+              <label style="display:flex;align-items:center;gap:.75rem;padding:.9rem;border:1px solid var(--gold);border-radius:6px;cursor:pointer;font-size:.85rem;">
+                <input type="radio" name="pay" value="wechat" checked> <span>💚 微信支付</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:.75rem;padding:.9rem;border:1px solid rgba(0,0,0,.1);border-radius:6px;cursor:pointer;font-size:.85rem;">
+                <input type="radio" name="pay" value="alipay"> <span>🔵 支付宝</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:.75rem;padding:.9rem;border:1px solid rgba(0,0,0,.1);border-radius:6px;cursor:pointer;font-size:.85rem;">
+                <input type="radio" name="pay" value="bank"> <span>🏦 银行卡</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="order-summary-box">
+          <div class="os-title">订单汇总</div>
+          <div class="os-items" id="ckItems"></div>
+          <hr class="os-divider">
+          <div class="os-total"><span class="os-total-label">合计</span><span class="os-total-price" id="ckTotal">¥0</span></div>
+          <button class="place-order-btn" onclick="placeOrder()">立即下单</button>
+          <div class="security-note">🔒 安全支付 · 7天无理由退换 · 全程溯源可查</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /shopScreen -->
+
+<!-- ===== CART DRAWER ===== -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-head">
+    <h3>购物车</h3>
+    <button class="cart-close" onclick="toggleCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-foot" id="cartFoot"></div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="prodModal" onclick="closeProdModal(event)">
+  <div class="modal-box" id="prodModalBox">
+    <button class="modal-close" onclick="closeProdModalDirect()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN SCREEN ===== -->
+<div class="screen" id="adminScreen" style="display:none!important;">
+  <nav class="admin-sidebar" id="adminSidebar">
+    <div class="admin-logo">
+      <div class="admin-logo-text">ONE&amp;ONE Admin</div>
+      <div class="admin-logo-sub">管理后台 · PORTAL</div>
+    </div>
+    <div class="admin-nav">
+      <div class="admin-nav-item active" onclick="showAdminPanel('dashboard')"><span class="admin-nav-icon">📊</span>数据概览</div>
+      <div class="admin-nav-item" onclick="showAdminPanel('products')"><span class="admin-nav-icon">📦</span>商品管理</div>
+      <div class="admin-nav-item" onclick="showAdminPanel('orders')"><span class="admin-nav-icon">🧾</span>订单管理</div>
+      <div class="admin-nav-item" onclick="showAdminPanel('users')"><span class="admin-nav-icon">👥</span>用户管理</div>
+      <div class="admin-nav-item" onclick="showAdminPanel('categories')"><span class="admin-nav-icon">🗂</span>分类管理</div>
+    </div>
+    <div class="admin-footer">
+      <button class="admin-logout" onclick="logout()">退出后台</button>
+    </div>
+  </nav>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div class="admin-page-title" id="adminPageTitle">数据概览</div>
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <div class="sh-avatar" style="background:var(--gold);" id="adminAvatar">A</div>
+        <span style="font-size:.82rem;color:var(--text-muted);" id="adminName">管理员</span>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="admin-panel active" id="panel-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">总商品数</div><div class="stat-value" id="statProducts">0</div><div class="stat-change up" id="statProductsChange"></div></div>
+        <div class="stat-card"><div class="stat-label">总订单数</div><div class="stat-value" id="statOrders">0</div><div class="stat-change up">↑ 本月新增</div></div>
+        <div class="stat-card"><div class="stat-label">注册用户</div><div class="stat-value" id="statUsers">0</div><div class="stat-change up">↑ 持续增长</div></div>
+        <div class="stat-card"><div class="stat-label">本月收入</div><div class="stat-value text-gold" id="statRevenue">¥0</div><div class="stat-change up">已完成订单</div></div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-header"><div class="admin-card-title">各分类商品分布</div></div>
+        <div style="padding:1.5rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;" id="catStatsGrid"></div>
+      </div>
+      <div style="margin-top:1.25rem;" class="admin-card">
+        <div class="admin-card-header"><div class="admin-card-title">最近订单</div></div>
+        <div class="orders-table-wrap"><table><thead><tr><th>订单号</th><th>买家</th><th>金额</th><th>状态</th><th>时间</th></tr></thead><tbody id="recentOrdersBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <div class="admin-panel" id="panel-products">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <div class="admin-search"><input type="text" placeholder="搜索商品名称…" id="prodSearch" oninput="renderAdminProducts()"></div>
+            <select class="filter-select" id="prodCatFilter" onchange="renderAdminProducts()">
+              <option value="all">所有分类</option>
+              <option value="wine">红酒</option>
+              <option value="health">大健康</option>
+              <option value="beauty">美妆护肤</option>
+              <option value="food">功能性食品</option>
+            </select>
+          </div>
+          <button class="admin-btn admin-btn-gold" onclick="openProductForm()">+ 添加商品</button>
+        </div>
+        <div class="orders-table-wrap">
+          <table>
+            <thead><tr><th>图片</th><th>商品名称</th><th>分类</th><th>价格</th><th>原价</th><th>库存</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="adminProductsBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="prodPagination"></div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="admin-panel" id="panel-orders">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title">所有订单</div>
+          <select class="filter-select" id="orderStatusFilter" onchange="renderOrders()">
+            <option value="all">所有状态</option>
+            <option value="pending">待付款</option>
+            <option value="processing">处理中</option>
+            <option value="shipped">已发货</option>
+            <option value="completed">已完成</option>
+            <option value="cancelled">已取消</option>
+          </select>
+        </div>
+        <div class="orders-table-wrap">
+          <table><thead><tr><th>订单号</th><th>买家</th><th>商品</th><th>金额</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+          <tbody id="ordersBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="admin-panel" id="panel-users">
+      <div class="admin-card">
+        <div class="admin-card-header"><div class="admin-card-title">注册用户</div></div>
+        <div class="orders-table-wrap">
+          <table><thead><tr><th>用户名</th><th>邮箱</th><th>注册方式</th><th>注册时间</th><th>状态</th></tr></thead>
+          <tbody id="usersBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="admin-panel" id="panel-categories">
+      <div class="admin-card">
+        <div class="admin-card-header"><div class="admin-card-title">分类管理</div></div>
+        <div style="padding:1.5rem;display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;" id="catManageGrid"></div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /adminScreen -->
+
+<!-- PRODUCT FORM MODAL -->
+<div class="form-modal-overlay hidden" id="productFormModal">
+  <div class="form-modal">
+    <div class="fm-header">
+      <div class="fm-title" id="fmTitle">添加商品</div>
+      <button class="fm-close" onclick="closeProductForm()">✕</button>
+    </div>
+    <div class="fm-body">
+      <input type="hidden" id="fmId">
+      <div class="fm-row">
+        <div class="fm-group">
+          <label class="fm-label">商品名称 <em>*</em></label>
+          <input class="fm-input" id="fmName" placeholder="输入商品名称" />
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">英文名称</label>
+          <input class="fm-input" id="fmNameEn" placeholder="Product name in English" />
+        </div>
+      </div>
+      <div class="fm-row full">
+        <div class="fm-group">
+          <label class="fm-label">商品描述 <em>*</em></label>
+          <textarea class="fm-textarea" id="fmDesc" placeholder="详细描述商品特点、成分、使用方法等"></textarea>
+        </div>
+      </div>
+      <div class="fm-row">
+        <div class="fm-group">
+          <label class="fm-label">商品分类 <em>*</em></label>
+          <select class="fm-select" id="fmCat">
+            <option value="wine">🍷 红酒</option>
+            <option value="health">💊 大健康</option>
+            <option value="beauty">✨ 美妆护肤</option>
+            <option value="food">🌿 功能性食品</option>
+          </select>
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">库存数量</label>
+          <input class="fm-input" id="fmStock" type="number" placeholder="0" min="0" />
+        </div>
+      </div>
+      <div class="fm-row">
+        <div class="fm-group">
+          <label class="fm-label">售价（元） <em>*</em></label>
+          <input class="fm-input" id="fmPrice" type="number" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="fm-group">
+          <label class="fm-label">原价（元，可选）</label>
+          <input class="fm-input" id="fmOrigPrice" type="number" placeholder="0.00" step="0.01" />
+        </div>
+      </div>
+      <div class="fm-row full">
+        <div class="fm-group">
+          <label class="fm-label">商品图片</label>
+          <div class="img-upload-area" id="imgUploadArea">
+            <input type="file" id="fmImg" accept="image/*" onchange="handleImgUpload(event)">
+            <div class="img-upload-icon">📷</div>
+            <div class="img-upload-text">点击或拖拽上传图片<br><span style="font-size:.72rem;color:#aaa;">支持 JPG、PNG、WebP，建议正方形，≤ 5MB</span></div>
+          </div>
+          <img id="imgPreview" class="img-preview hidden" />
+          <input type="hidden" id="fmImgData">
+        </div>
+      </div>
+      <div class="fm-row full">
+        <div class="fm-group">
+          <label class="fm-label">上架状态</label>
+          <div class="toggle-wrap">
+            <div class="toggle on" id="fmActiveToggle" onclick="toggleActive()"></div>
+            <span class="toggle-label" id="fmActiveLabel">已上架</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fm-footer">
+      <button class="admin-btn admin-btn-outline" onclick="closeProductForm()">取消</button>
+      <button class="admin-btn admin-btn-gold" onclick="saveProduct()">保存商品</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let state = {
+  currentUser: null,
+  isAdmin: false,
+  cart: [],
+  products: [],
+  orders: [],
+  users: [],
+  currentCategory: null,
+  currentFilter: 'all',
+  editingProductId: null,
+  productPage: 1,
+  productsPerPage: 10,
+};
+
+const CATS = {
+  wine:   {label:'红酒',en:'AUSTRALIAN RED WINE',icon:'🍷',sub:'慕易庄园原瓶进口 · 全程溯源'},
+  health: {label:'大健康保健品',en:'HEALTH SUPPLEMENTS',icon:'💊',sub:'澳洲顶级品牌授权 · 功效保证'},
+  beauty: {label:'美妆护肤',en:'BEAUTY & SKINCARE',icon:'✨',sub:'天然原料 · 科学配方'},
+  food:   {label:'功能性食品',en:'FUNCTIONAL FOODS',icon:'🌿',sub:'营养均衡 · 健康生活'},
+};
+
+// ===== SAMPLE DATA =====
+function initData(){
+  if(!localStorage.getItem('oneone_products')){
+    const prods=[
+      {id:1,name:'慕易庄园赤霞珠干红2021',nameEn:'Moui Estate Cabernet Sauvignon 2021',cat:'wine',price:298,origPrice:398,desc:'澳大利亚南澳地区精选赤霞珠葡萄，单宁丰厚，黑浆果与雪松香气交织，陈年12个月于法国橡木桶，适合搭配红肉料理。',stock:120,active:true,img:''},
+      {id:2,name:'慕易庄园西拉礼盒装',nameEn:'Moui Estate Shiraz Gift Box',cat:'wine',price:688,origPrice:888,desc:'双瓶礼盒装，精选2019年份西拉，深紫色泽，黑胡椒与紫罗兰香气层次丰富，余味悠长，馈赠佳品。',stock:48,active:true,img:''},
+      {id:3,name:'慕易庄园霞多丽干白',nameEn:'Moui Estate Chardonnay',cat:'wine',price:198,origPrice:258,desc:'清爽干白，绿苹果与柑橘香气，口感清新，略带矿物质风味，适合搭配海鲜及轻食料理。',stock:80,active:true,img:''},
+      {id:4,name:'Swisse 护肝片 120粒',nameEn:'Swisse Liver Detox 120 Tabs',cat:'health',price:188,origPrice:248,desc:'澳洲Swisse明星产品，含水飞蓟素+朝鲜蓟提取物，帮助肝脏排毒修复，适合经常饮酒及熬夜人群。',stock:200,active:true,img:''},
+      {id:5,name:'Blackmores 鱼油胶囊 400粒',nameEn:'Blackmores Omega-3 Fish Oil 400',cat:'health',price:298,origPrice:368,desc:'深海鱼油，富含EPA和DHA，支持心脑血管健康，改善关节灵活性，澳洲药房销量第一品牌。',stock:150,active:true,img:''},
+      {id:6,name:'Swisse 胶原蛋白液 500ml',nameEn:'Swisse Beauty Collagen Liquid',cat:'health',price:228,origPrice:298,desc:'口服胶原蛋白，含10,000mg水解胶原蛋白+维生素C，助力肌肤弹性与光泽，草莓口味，口感宜人。',stock:90,active:true,img:''},
+      {id:7,name:'Aesop 玫瑰臀部护理霜',nameEn:'Aesop Resurrection Aromatique',cat:'beauty',price:368,origPrice:null,desc:'澳洲Aesop经典款，含乳木果油与玫瑰提取物，深度滋润干燥肌肤，香气优雅持久。',stock:60,active:true,img:''},
+      {id:8,name:'Jurlique 玫瑰水面膜套装',nameEn:'Jurlique Rose Water Mask Set',cat:'beauty',price:488,origPrice:628,desc:'来自澳洲南澳有机玫瑰园，温和补水保湿面膜4片装，适合各种肤质，敏感肌友好配方。',stock:75,active:true,img:''},
+      {id:9,name:'True Natural 美白精华液',nameEn:'True Natural Brightening Serum',cat:'beauty',price:288,origPrice:358,desc:'含烟酰胺+VC衍生物，提亮肤色，淡化色斑，澳洲有机认证原料，无防腐剂配方。',stock:110,active:true,img:''},
+      {id:10,name:'澳洲蜂蜜坚果燕麦棒 10支',nameEn:'Aussie Honey Nut Oat Bar 10pcs',cat:'food',price:88,origPrice:118,desc:'麦卢卡蜂蜜+澳洲坚果+整粒燕麦，低GI健康零食，无人工色素防腐剂，适合健身人群随身携带。',stock:300,active:true,img:''},
+      {id:11,name:'胶原蛋白软糖 60粒',nameEn:'Collagen Beauty Gummies 60pcs',cat:'food',price:128,origPrice:158,desc:'每粒含500mg胶原蛋白+维E+葡萄籽提取物，草莓风味，边吃边美容，Z世代爆款。',stock:240,active:true,img:''},
+      {id:12,name:'益生菌代餐奶昔 15包',nameEn:'Probiotic Meal Shake 15 Sachets',cat:'food',price:258,origPrice:318,desc:'高蛋白低卡路里，含20亿益生菌+膳食纤维，香草奶昔口味，健康代餐首选。',stock:160,active:true,img:''},
+    ];
+    localStorage.setItem('oneone_products',JSON.stringify(prods));
+  }
+  if(!localStorage.getItem('oneone_users')){
+    localStorage.setItem('oneone_users',JSON.stringify([
+      {id:1,name:'管理员',email:'admin@oneone.com.au',provider:'email',role:'admin',createdAt:new Date().toISOString(),active:true},
+    ]));
+  }
+  if(!localStorage.getItem('oneone_orders')){
+    const now=Date.now();
+    localStorage.setItem('oneone_orders',JSON.stringify([
+      {id:'ORD2025001',userId:2,userName:'张小姐',items:[{name:'慕易庄园赤霞珠',qty:2,price:298}],total:596,status:'completed',createdAt:new Date(now-86400000*3).toISOString()},
+      {id:'ORD2025002',userId:3,userName:'李先生',items:[{name:'Swisse 护肝片',qty:1,price:188}],total:188,status:'shipped',createdAt:new Date(now-86400000*1).toISOString()},
+      {id:'ORD2025003',userId:4,userName:'王女士',items:[{name:'胶原蛋白软糖',qty:3,price:128}],total:384,status:'processing',createdAt:new Date(now-3600000).toISOString()},
+    ]));
+  }
+  loadData();
+}
+
+function loadData(){
+  state.products=JSON.parse(localStorage.getItem('oneone_products')||'[]');
+  state.users=JSON.parse(localStorage.getItem('oneone_users')||'[]');
+  state.orders=JSON.parse(localStorage.getItem('oneone_orders')||'[]');
+}
+
+function saveProducts(){localStorage.setItem('oneone_products',JSON.stringify(state.products));}
+function saveUsers(){localStorage.setItem('oneone_users',JSON.stringify(state.users));}
+function saveOrders(){localStorage.setItem('oneone_orders',JSON.stringify(state.orders));}
+
+// ===== TOAST =====
+function toast(msg,dur=2800){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ===== AUTH =====
+function socialLogin(provider){
+  const name = provider==='Google'?'Google 用户':provider==='Apple'?'Apple 用户':'Facebook 用户';
+  const email = `user_${Date.now()}@${provider.toLowerCase()}.com`;
+  loginUser({name,email,provider,role:'customer'});
+}
+function emailLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pwd=document.getElementById('loginPwd').value;
+  if(!email||!pwd){toast('请填写邮箱和密码');return;}
+  const users=JSON.parse(localStorage.getItem('oneone_users')||'[]');
+  const u=users.find(x=>x.email===email);
+  if(!u){toast('账户不存在，请先注册');return;}
+  loginUser(u);
+}
+function emailRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pwd=document.getElementById('regPwd').value;
+  if(!name||!email||!pwd){toast('请填写所有字段');return;}
+  if(pwd.length<6){toast('密码至少6位');return;}
+  const users=JSON.parse(localStorage.getItem('oneone_users')||'[]');
+  if(users.find(x=>x.email===email)){toast('该邮箱已注册');return;}
+  const newUser={id:Date.now(),name,email,provider:'email',role:'customer',createdAt:new Date().toISOString(),active:true};
+  users.push(newUser);
+  localStorage.setItem('oneone_users',JSON.stringify(users));
+  loadData();
+  loginUser(newUser);
+}
+function adminLogin(){
+  loginUser({name:'管理员',email:'admin@oneone.com.au',provider:'email',role:'admin'},true);
+}
+function loginUser(u,isAdmin){
+  state.currentUser=u;
+  state.isAdmin=isAdmin||u.role==='admin';
+  closeAuthModal();
+  if(state.isAdmin){
+    showAdminScreen();
+  } else {
+    showShopScreen();
+  }
+}
+function openAuthModal(){
+  switchAuthMode('login');
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('authScreen').classList.add('active');
+}
+function closeAuthModal(){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('authScreen').classList.remove('active');
+}
+function toggleUserDropdown(){
+  const dd=document.getElementById('userDropdown');
+  dd.style.display=dd.style.display==='none'?'block':'none';
+}
+// close dropdown on outside click
+document.addEventListener('click',function(e){
+  const ud=document.getElementById('userDropdown');
+  const hu=document.getElementById('headerUser');
+  if(ud&&hu&&!hu.contains(e.target))ud.style.display='none';
+});
+function logout(){
+  state.currentUser=null;state.isAdmin=false;state.cart=[];
+  updateCart();
+  // hide admin, keep shop visible
+  document.getElementById('adminScreen').style.display='none';
+  document.getElementById('adminScreen').classList.remove('active');
+  document.getElementById('shopScreen').classList.add('active');
+  document.getElementById('headerGuest').style.display='';
+  document.getElementById('headerUser').style.display='none';
+  renderHomePage();
+  showPage('home');
+  closeAuthModal();
+}
+function switchAuthMode(mode){
+  document.getElementById('authLogin').classList.toggle('hidden',mode!=='login');
+  document.getElementById('authRegister').classList.toggle('hidden',mode!=='register');
+}
+
+// ===== SCREENS =====
+function showShopScreen(){
+  document.getElementById('adminScreen').style.display='none';
+  document.getElementById('adminScreen').classList.remove('active');
+  document.getElementById('shopScreen').classList.add('active');
+  const u=state.currentUser;
+  if(u){
+    document.getElementById('headerGuest').style.display='none';
+    document.getElementById('headerUser').style.display='';
+    document.getElementById('userNameDisplay').textContent=u.name;
+    document.getElementById('userAvatar').textContent=u.name[0].toUpperCase();
+    document.getElementById('dropUserEmail').textContent=u.email||u.name;
+    const ml=document.getElementById('mobileLoginLink');
+    const mlo=document.getElementById('mobileLogoutLink');
+    if(ml)ml.style.display='none';
+    if(mlo)mlo.style.display='';
+  }
+  renderHomePage();
+  showPage('home');
+  updateCategoryCounts();
+}
+function showAdminScreen(){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='';});
+  document.getElementById('adminScreen').style.removeProperty('display');
+  document.getElementById('adminScreen').style.display='flex';
+  document.getElementById('adminScreen').classList.add('active');
+  const u=state.currentUser;
+  document.getElementById('adminAvatar').textContent=u.name[0].toUpperCase();
+  document.getElementById('adminName').textContent=u.name;
+  refreshAdminDashboard();
+  renderAdminProducts();
+  renderOrders();
+  renderUsers();
+  renderCatManage();
+}
+
+// ===== PAGES =====
+function showPage(page){
+  ['home','category','checkout'].forEach(p=>{
+    document.getElementById('page-'+p).classList.toggle('hidden',p!==page);
+  });
+  document.querySelectorAll('.sh-nav a').forEach(a=>{
+    a.classList.toggle('active',a.dataset.page===page);
+  });
+}
+function showCategory(catKey){
+  state.currentCategory=catKey;
+  const cat=CATS[catKey];
+  document.getElementById('catLabel').textContent=cat.icon+' '+cat.en;
+  document.getElementById('catTitle').innerHTML=`<em style="color:var(--gold);font-style:normal;">${cat.icon}</em> ${cat.label}`;
+  document.getElementById('catSub').textContent=cat.sub;
+  document.getElementById('catProductTitle').textContent=cat.label+' · 全部商品';
+  document.getElementById('catSort').value='default';
+  renderCategoryProducts(catKey,'default');
+  showPage('category');
+  document.querySelectorAll('.sh-nav a').forEach(a=>a.classList.toggle('active',a.dataset.page===catKey));
+}
+function sortProducts(){
+  renderCategoryProducts(state.currentCategory,document.getElementById('catSort').value);
+}
+function renderCategoryProducts(catKey,sort){
+  let prods=state.products.filter(p=>p.cat===catKey&&p.active);
+  if(sort==='price-asc')prods.sort((a,b)=>a.price-b.price);
+  if(sort==='price-desc')prods.sort((a,b)=>b.price-a.price);
+  renderProductGrid(document.getElementById('catProductGrid'),prods);
+}
+
+// ===== HOME =====
+function renderHomePage(){
+  filterHome('all',document.querySelector('#homeFilter .active'));
+}
+function filterHome(cat,btn){
+  state.currentFilter=cat;
+  document.querySelectorAll('#homeFilter .filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const prods=cat==='all'?state.products.filter(p=>p.active):state.products.filter(p=>p.cat===cat&&p.active);
+  renderProductGrid(document.getElementById('homeProductGrid'),prods);
+}
+function updateCategoryCounts(){
+  Object.keys(CATS).forEach(k=>{
+    const c=state.products.filter(p=>p.cat===k&&p.active).length;
+    const el=document.getElementById('cat-count-'+k);
+    if(el)el.textContent=c+' 款';
+  });
+}
+
+// ===== PRODUCT GRID =====
+function renderProductGrid(container,prods){
+  if(!prods.length){
+    container.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ei">📦</div><h3>暂无商品</h3><p>该分类下暂无上架商品</p></div>`;
+    return;
+  }
+  container.innerHTML=prods.map(p=>{
+    const qty=getCartQty(p.id);
+    return `
+    <div class="prod-card" onclick="openProduct(${p.id})">
+      ${p.img?`<img class="prod-img" src="${p.img}" alt="${p.name}">`:`<div class="prod-img-placeholder">${CATS[p.cat]?.icon||'📦'}</div>`}
+      <div class="prod-body">
+        <div class="prod-cat">${CATS[p.cat]?.label||p.cat}</div>
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-desc">${p.desc}</div>
+        <div class="prod-foot">
+          <div><span class="prod-price">¥${p.price}</span>${p.origPrice?`<span class="prod-price-orig">¥${p.origPrice}</span>`:''}</div>
+          <div class="prod-qty-ctrl" onclick="event.stopPropagation()">
+            <button onclick="cardDecrement(${p.id})">−</button>
+            <div class="prod-qty-num" id="card-qty-${p.id}">${qty||0}</div>
+            <button onclick="cardIncrement(${p.id})">+</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function getCartQty(id){
+  const item=state.cart.find(x=>x.id===id);
+  return item?item.qty:0;
+}
+function cardIncrement(id){
+  addToCart(id,true);
+  // update all qty displays for this product
+  document.querySelectorAll('#card-qty-'+id).forEach(el=>el.textContent=getCartQty(id));
+}
+function cardDecrement(id){
+  const item=state.cart.find(x=>x.id===id);
+  if(!item)return;
+  if(item.qty<=1)removeFromCart(id);
+  else{item.qty--;updateCart();}
+  document.querySelectorAll('#card-qty-'+id).forEach(el=>el.textContent=getCartQty(id));
+}
+
+// ===== PRODUCT MODAL =====
+let modalQty=1;
+function openProduct(id){
+  const p=state.products.find(x=>x.id===id);if(!p)return;
+  modalQty=1;
+  document.getElementById('modalContent').innerHTML=`
+    ${p.img?`<img class="modal-img" src="${p.img}" alt="${p.name}">`:`<div class="modal-img-ph">${CATS[p.cat]?.icon||'📦'}</div>`}
+    <div class="modal-body">
+      <div class="modal-cat">${CATS[p.cat]?.icon} ${CATS[p.cat]?.label} · ${p.nameEn||''}</div>
+      <div class="modal-name">${p.name}</div>
+      <div class="modal-desc">${p.desc}</div>
+      <div class="modal-price-row">
+        <span class="modal-price">¥${p.price}</span>
+        ${p.origPrice?`<span class="modal-orig">¥${p.origPrice}</span>`:''}
+        ${p.origPrice?`<span class="badge badge-gold">省¥${p.origPrice-p.price}</span>`:''}
+      </div>
+      <div class="qty-row">
+        <div class="qty-ctrl">
+          <button onclick="changeModalQty(-1)">−</button>
+          <span id="modalQtyDisplay">1</span>
+          <button onclick="changeModalQty(1)">+</button>
+        </div>
+        <button class="modal-add-btn" onclick="addToCartFromModal(${p.id})">加入购物车</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--text-muted);">库存：${p.stock}件 · 假一赔千 · 官方授权</div>
+    </div>`;
+  const ov=document.getElementById('prodModal');
+  ov.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function changeModalQty(d){
+  modalQty=Math.max(1,modalQty+d);
+  document.getElementById('modalQtyDisplay').textContent=modalQty;
+}
+function addToCartFromModal(id){
+  for(let i=0;i<modalQty;i++)addToCart(id,true);
+  toast(`已加入购物车 ×${modalQty}`);
+  closeProdModalDirect();
+}
+function closeProdModal(e){if(e.target===document.getElementById('prodModal'))closeProdModalDirect();}
+function closeProdModalDirect(){
+  document.getElementById('prodModal').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+// ===== CART =====
+function addToCart(id,silent){
+  const p=state.products.find(x=>x.id===id);if(!p)return;
+  const existing=state.cart.find(x=>x.id===id);
+  if(existing)existing.qty++;
+  else state.cart.push({id,name:p.name,price:p.price,img:p.img,cat:p.cat,qty:1});
+  updateCart();
+  if(!silent)toast('✓ 已加入购物车');
+}
+function removeFromCart(id){
+  state.cart=state.cart.filter(x=>x.id!==id);
+  updateCart();
+}
+function changeCartQty(id,d){
+  const item=state.cart.find(x=>x.id===id);
+  if(!item)return;
+  item.qty=Math.max(1,item.qty+d);
+  if(item.qty<1)removeFromCart(id);
+  updateCart();
+}
+function updateCart(){
+  const total=state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const count=state.cart.reduce((s,i)=>s+i.qty,0);
+  const countEl=document.getElementById('cartCount');
+  if(countEl)countEl.textContent=count;
+  const itemsEl=document.getElementById('cartItems');
+  const footEl=document.getElementById('cartFoot');
+  if(!itemsEl)return;
+  if(!state.cart.length){
+    itemsEl.innerHTML=`<div class="cart-empty"><div style="font-size:2.5rem;margin-bottom:.75rem;">🛒</div><p>购物车是空的</p></div>`;
+    footEl.innerHTML='';return;
+  }
+  itemsEl.innerHTML=state.cart.map(i=>`
+    <div class="cart-item">
+      ${i.img?`<img class="cart-item-img" src="${i.img}" alt="${i.name}">`:`<div class="cart-item-img-ph">${CATS[i.cat]?.icon||'📦'}</div>`}
+      <div class="cart-item-info">
+        <div class="cart-item-name">${i.name}</div>
+        <div class="cart-item-price">¥${i.price}</div>
+        <div class="cart-item-controls">
+          <div class="ci-qty">
+            <button onclick="changeCartQty(${i.id},-1)">−</button>
+            <span>${i.qty}</span>
+            <button onclick="changeCartQty(${i.id},1)">+</button>
+          </div>
+          <button class="ci-remove" onclick="removeFromCart(${i.id})">删除</button>
+        </div>
+      </div>
+    </div>`).join('');
+  footEl.innerHTML=`
+    <div class="cart-total-row"><span class="cart-total-label">合计 (${count}件)</span><span class="cart-total-price">¥${total.toFixed(2)}</span></div>
+    <button class="checkout-btn" onclick="goCheckout()">去结算</button>`;
+}
+function toggleCart(){
+  document.getElementById('cartDrawer').classList.toggle('open');
+  document.getElementById('cartOverlay').classList.toggle('open');
+}
+function goCheckout(){
+  toggleCart();
+  renderCheckout();
+  showPage('checkout');
+}
+function renderCheckout(){
+  const ckItems=document.getElementById('ckItems');
+  const ckTotal=document.getElementById('ckTotal');
+  if(!ckItems)return;
+  const total=state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+  ckItems.innerHTML=state.cart.map(i=>`<div class="os-item"><span class="os-item-name">${i.name} ×${i.qty}</span><span class="os-item-price">¥${(i.price*i.qty).toFixed(2)}</span></div>`).join('');
+  ckTotal.textContent='¥'+total.toFixed(2);
+  const u=state.currentUser;
+  if(u){
+    const n=document.getElementById('ck-name');
+    if(n&&!n.value)n.value=u.name||'';
+  }
+}
+function placeOrder(){
+  const name=document.getElementById('ck-name').value.trim();
+  const phone=document.getElementById('ck-phone').value.trim();
+  const city=document.getElementById('ck-city').value.trim();
+  const addr=document.getElementById('ck-addr').value.trim();
+  if(!name||!phone||!city||!addr){toast('请填写完整收货信息');return;}
+  if(!state.cart.length){toast('购物车为空');return;}
+  const total=state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const order={
+    id:'ORD'+Date.now(),
+    userId:state.currentUser?.id,
+    userName:name,
+    items:state.cart.map(i=>({name:i.name,qty:i.qty,price:i.price})),
+    total,status:'processing',
+    address:`${city} ${addr}`,phone,
+    createdAt:new Date().toISOString(),
+  };
+  state.orders.unshift(order);
+  saveOrders();
+  state.cart=[];
+  updateCart();
+  toast('🎉 订单提交成功！我们将尽快处理您的订单');
+  showPage('home');
+}
+function toggleUserMenu(){logout();}
+
+// ===== ADMIN =====
+function showAdminPanel(name){
+  document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.admin-nav-item').forEach(i=>i.classList.remove('active'));
+  const titles={dashboard:'数据概览',products:'商品管理',orders:'订单管理',users:'用户管理',categories:'分类管理'};
+  document.getElementById('adminPageTitle').textContent=titles[name]||name;
+  const navItems=document.querySelectorAll('.admin-nav-item');
+  const idx={dashboard:0,products:1,orders:2,users:3,categories:4};
+  if(navItems[idx[name]])navItems[idx[name]].classList.add('active');
+  if(name==='dashboard')refreshAdminDashboard();
+  if(name==='products')renderAdminProducts();
+  if(name==='orders')renderOrders();
+  if(name==='users')renderUsers();
+  if(name==='categories')renderCatManage();
+}
+function refreshAdminDashboard(){
+  loadData();
+  document.getElementById('statProducts').textContent=state.products.length;
+  document.getElementById('statProductsChange').textContent='↑ '+state.products.filter(p=>p.active).length+' 款已上架';
+  document.getElementById('statOrders').textContent=state.orders.length;
+  document.getElementById('statUsers').textContent=state.users.length;
+  const rev=state.orders.filter(o=>o.status==='completed').reduce((s,o)=>s+o.total,0);
+  document.getElementById('statRevenue').textContent='¥'+rev.toFixed(0);
+  const cg=document.getElementById('catStatsGrid');
+  if(cg){
+    cg.innerHTML=Object.entries(CATS).map(([k,v])=>{
+      const cnt=state.products.filter(p=>p.cat===k).length;
+      const active=state.products.filter(p=>p.cat===k&&p.active).length;
+      return `<div style="text-align:center;padding:1.25rem;border:1px solid rgba(0,0,0,.06);border-radius:8px;">
+        <div style="font-size:2rem;margin-bottom:.5rem;">${v.icon}</div>
+        <div style="font-weight:700;font-size:1.4rem;color:var(--gold);">${cnt}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.25rem;">${v.label}</div>
+        <div style="font-size:.7rem;color:var(--success);">${active} 已上架</div>
+      </div>`;
+    }).join('');
+  }
+  const rb=document.getElementById('recentOrdersBody');
+  if(rb){
+    rb.innerHTML=state.orders.slice(0,5).map(o=>`<tr>
+      <td style="font-family:monospace;font-size:.75rem;">${o.id}</td>
+      <td>${o.userName}</td>
+      <td class="text-gold" style="font-weight:600;">¥${o.total}</td>
+      <td><span class="order-status os-${o.status}">${statusLabel(o.status)}</span></td>
+      <td style="font-size:.75rem;color:var(--text-muted);">${fmtDate(o.createdAt)}</td>
+    </tr>`).join('');
+  }
+}
+
+function renderAdminProducts(){
+  loadData();
+  const search=document.getElementById('prodSearch')?.value.toLowerCase()||'';
+  const cat=document.getElementById('prodCatFilter')?.value||'all';
+  let prods=state.products.filter(p=>{
+    const matchSearch=!search||p.name.toLowerCase().includes(search)||(p.nameEn||'').toLowerCase().includes(search);
+    const matchCat=cat==='all'||p.cat===cat;
+    return matchSearch&&matchCat;
+  });
+  const total=prods.length;
+  const pp=state.productsPerPage;
+  const pages=Math.ceil(total/pp);
+  if(state.productPage>pages)state.productPage=1;
+  const start=(state.productPage-1)*pp;
+  const paged=prods.slice(start,start+pp);
+  const tbody=document.getElementById('adminProductsBody');
+  if(!tbody)return;
+  tbody.innerHTML=paged.map(p=>`<tr>
+    <td>${p.img?`<img class="td-img" src="${p.img}" alt="">`:`<div class="td-img-ph">${CATS[p.cat]?.icon||'📦'}</div>`}</td>
+    <td><div style="font-weight:600;font-size:.85rem;">${p.name}</div><div style="font-size:.72rem;color:var(--text-muted);">${p.nameEn||''}</div></td>
+    <td><span class="badge badge-gold">${CATS[p.cat]?.icon} ${CATS[p.cat]?.label}</span></td>
+    <td style="font-weight:700;color:var(--gold);">¥${p.price}</td>
+    <td style="color:var(--text-muted);">${p.origPrice?'¥'+p.origPrice:'—'}</td>
+    <td>${p.stock}</td>
+    <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'上架中':'已下架'}</span></td>
+    <td><div class="td-actions">
+      <button class="td-btn td-edit" onclick="editProduct(${p.id})">编辑</button>
+      <button class="td-btn td-del" onclick="deleteProduct(${p.id})">删除</button>
+    </div></td>
+  </tr>`).join('');
+  const pg=document.getElementById('prodPagination');
+  if(pg){
+    let btns='';
+    for(let i=1;i<=pages;i++)btns+=`<button class="page-btn ${i===state.productPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    pg.innerHTML=`<span class="page-info">共 ${total} 件商品</span><div class="page-btns">${btns}</div>`;
+  }
+}
+function goPage(n){state.productPage=n;renderAdminProducts();}
+
+function renderOrders(){
+  const filter=document.getElementById('orderStatusFilter')?.value||'all';
+  let orders=filter==='all'?state.orders:state.orders.filter(o=>o.status===filter);
+  const tbody=document.getElementById('ordersBody');
+  if(!tbody)return;
+  tbody.innerHTML=orders.map(o=>`<tr>
+    <td style="font-family:monospace;font-size:.75rem;">${o.id}</td>
+    <td>${o.userName}</td>
+    <td style="font-size:.78rem;max-width:200px;">${o.items.map(i=>i.name+'×'+i.qty).join('、')}</td>
+    <td style="font-weight:700;color:var(--gold);">¥${o.total}</td>
+    <td><span class="order-status os-${o.status}">${statusLabel(o.status)}</span></td>
+    <td style="font-size:.75rem;color:var(--text-muted);">${fmtDate(o.createdAt)}</td>
+    <td>
+      <select class="filter-select" style="font-size:.72rem;padding:4px 8px;" onchange="updateOrderStatus('${o.id}',this.value)">
+        ${['pending','processing','shipped','completed','cancelled'].map(s=>`<option value="${s}" ${s===o.status?'selected':''}>${statusLabel(s)}</option>`).join('')}
+      </select>
+    </td>
+  </tr>`).join('');
+}
+function updateOrderStatus(id,status){
+  const o=state.orders.find(x=>x.id===id);
+  if(o){o.status=status;saveOrders();toast('订单状态已更新');}
+}
+function renderUsers(){
+  const tbody=document.getElementById('usersBody');
+  if(!tbody)return;
+  tbody.innerHTML=state.users.map(u=>`<tr>
+    <td style="font-weight:600;">${u.name}</td>
+    <td style="font-size:.82rem;color:var(--text-muted);">${u.email}</td>
+    <td><span class="badge badge-gold">${u.provider}</span></td>
+    <td style="font-size:.75rem;color:var(--text-muted);">${fmtDate(u.createdAt)}</td>
+    <td><span class="badge ${u.active?'badge-green':'badge-red'}">${u.role==='admin'?'管理员':'会员'}</span></td>
+  </tr>`).join('');
+}
+function renderCatManage(){
+  const g=document.getElementById('catManageGrid');
+  if(!g)return;
+  g.innerHTML=Object.entries(CATS).map(([k,v])=>{
+    const total=state.products.filter(p=>p.cat===k).length;
+    const active=state.products.filter(p=>p.cat===k&&p.active).length;
+    return `<div style="background:var(--white);border:1px solid rgba(0,0,0,.06);border-radius:8px;padding:1.5rem;display:flex;gap:1rem;align-items:center;">
+      <div style="font-size:2.5rem;">${v.icon}</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;margin-bottom:.2rem;">${v.label}</div>
+        <div style="font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.5rem;">${v.en}</div>
+        <div style="font-size:.78rem;color:var(--text-muted);">共 <strong style="color:var(--text);">${total}</strong> 件 · 上架 <strong style="color:var(--success);">${active}</strong> 件</div>
+      </div>
+      <button class="admin-btn admin-btn-outline" onclick="showAdminPanel('products');setTimeout(()=>{document.getElementById('prodCatFilter').value='${k}';renderAdminProducts();},100)">查看商品</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== PRODUCT FORM =====
+let fmActive=true;
+function openProductForm(id){
+  fmActive=true;
+  document.getElementById('fmId').value='';
+  document.getElementById('fmName').value='';
+  document.getElementById('fmNameEn').value='';
+  document.getElementById('fmDesc').value='';
+  document.getElementById('fmCat').value='wine';
+  document.getElementById('fmPrice').value='';
+  document.getElementById('fmOrigPrice').value='';
+  document.getElementById('fmStock').value='100';
+  document.getElementById('fmImgData').value='';
+  document.getElementById('imgPreview').classList.add('hidden');
+  document.getElementById('imgPreview').src='';
+  document.getElementById('fmActiveToggle').className='toggle on';
+  document.getElementById('fmActiveLabel').textContent='已上架';
+  document.getElementById('fmTitle').textContent='添加商品';
+  document.getElementById('productFormModal').classList.remove('hidden');
+}
+function editProduct(id){
+  const p=state.products.find(x=>x.id===id);if(!p)return;
+  fmActive=p.active;
+  document.getElementById('fmId').value=p.id;
+  document.getElementById('fmName').value=p.name;
+  document.getElementById('fmNameEn').value=p.nameEn||'';
+  document.getElementById('fmDesc').value=p.desc;
+  document.getElementById('fmCat').value=p.cat;
+  document.getElementById('fmPrice').value=p.price;
+  document.getElementById('fmOrigPrice').value=p.origPrice||'';
+  document.getElementById('fmStock').value=p.stock||0;
+  document.getElementById('fmImgData').value=p.img||'';
+  if(p.img){
+    document.getElementById('imgPreview').src=p.img;
+    document.getElementById('imgPreview').classList.remove('hidden');
+  } else {
+    document.getElementById('imgPreview').classList.add('hidden');
+  }
+  document.getElementById('fmActiveToggle').className='toggle '+(p.active?'on':'');
+  document.getElementById('fmActiveLabel').textContent=p.active?'已上架':'已下架';
+  document.getElementById('fmTitle').textContent='编辑商品';
+  document.getElementById('productFormModal').classList.remove('hidden');
+}
+function closeProductForm(){document.getElementById('productFormModal').classList.add('hidden');}
+function toggleActive(){
+  fmActive=!fmActive;
+  document.getElementById('fmActiveToggle').className='toggle '+(fmActive?'on':'');
+  document.getElementById('fmActiveLabel').textContent=fmActive?'已上架':'已下架';
+}
+function handleImgUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  if(file.size>5*1024*1024){toast('图片不能超过5MB');return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const data=ev.target.result;
+    document.getElementById('fmImgData').value=data;
+    document.getElementById('imgPreview').src=data;
+    document.getElementById('imgPreview').classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+function saveProduct(){
+  const name=document.getElementById('fmName').value.trim();
+  const price=parseFloat(document.getElementById('fmPrice').value);
+  const desc=document.getElementById('fmDesc').value.trim();
+  const cat=document.getElementById('fmCat').value;
+  if(!name||!price||!desc){toast('请填写商品名称、价格和描述');return;}
+  const id=document.getElementById('fmId').value;
+  const origPriceVal=document.getElementById('fmOrigPrice').value;
+  const prod={
+    id:id?parseInt(id):Date.now(),
+    name,
+    nameEn:document.getElementById('fmNameEn').value.trim(),
+    desc,cat,price,
+    origPrice:origPriceVal?parseFloat(origPriceVal):null,
+    stock:parseInt(document.getElementById('fmStock').value)||0,
+    img:document.getElementById('fmImgData').value||'',
+    active:fmActive,
+  };
+  if(id){
+    const idx=state.products.findIndex(x=>x.id===prod.id);
+    if(idx>-1)state.products[idx]=prod;
+  } else {
+    state.products.unshift(prod);
+  }
+  saveProducts();
+  renderAdminProducts();
+  updateCategoryCounts();
+  closeProductForm();
+  toast(id?'商品已更新 ✓':'商品已添加 ✓');
+}
+function deleteProduct(id){
+  if(!confirm('确定要删除该商品吗？'))return;
+  state.products=state.products.filter(x=>x.id!==id);
+  saveProducts();
+  renderAdminProducts();
+  updateCategoryCounts();
+  toast('商品已删除');
+}
+
+// ===== UTILS =====
+function statusLabel(s){return{pending:'待付款',processing:'处理中',shipped:'已发货',completed:'已完成',cancelled:'已取消'}[s]||s;}
+function fmtDate(iso){
+  if(!iso)return'';
+  const d=new Date(iso);
+  return d.toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function toggleMobileNav(){document.getElementById('mobileNav').classList.toggle('open');}
+
+// ===== INIT =====
+initData();
+// Start on shop screen — no login required to browse
+document.getElementById('shopScreen').classList.add('active');
+renderHomePage();
+updateCategoryCounts();
+</script>
+</body>
+</html>
