@@ -21,6 +21,11 @@ if (entered !== ADMIN_PASSWORD) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OnePrime · 管理后台</title>
+  <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/icon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
@@ -83,6 +88,63 @@ if (entered !== ADMIN_PASSWORD) {
     .page-btns{display:flex;gap:.4rem;}
     .page-btn{padding:5px 10px;border:1px solid rgba(0,0,0,.1);border-radius:3px;font-size:.75rem;background:#FFFFFF;cursor:pointer;transition:all .2s;}
     .page-btn.active,.page-btn:hover{background:#C9A84C;border-color:#C9A84C;color:#1A1410;font-weight:600;}
+
+    /* ===== MOBILE PRODUCT CARDS =====
+       On narrow screens the products table (which needs horizontal scroll
+       to reach 原价/库存/状态/操作) is replaced with a card list where every
+       field is visible without scrolling sideways. Tapping a card opens it
+       for editing; a checkbox enables multi-select for batch actions. */
+    .product-cards{display:none;}
+    .prod-admin-card{display:flex;gap:.75rem;align-items:flex-start;padding:.9rem 1rem;border-bottom:1px solid rgba(0,0,0,.06);cursor:pointer;transition:background .15s;}
+    .prod-admin-card:last-child{border-bottom:none;}
+    .prod-admin-card:active{background:rgba(201,168,76,0.06);}
+    .prod-admin-card.selected{background:rgba(201,168,76,0.09);}
+    .pac-checkbox{flex-shrink:0;width:20px;height:20px;margin-top:6px;accent-color:#C9A84C;cursor:pointer;}
+    .pac-img{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#FAF7F0;flex-shrink:0;}
+    .pac-img-ph{width:56px;height:56px;border-radius:8px;background:linear-gradient(135deg,#f5f0e8,#ede5d4);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+    .pac-body{flex:1;min-width:0;}
+    .pac-name{font-weight:700;font-size:.88rem;line-height:1.3;margin-bottom:.3rem;}
+    .pac-meta{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-bottom:.4rem;}
+    .pac-row{display:flex;justify-content:space-between;align-items:baseline;font-size:.78rem;color:#7A6850;}
+    .pac-price{font-weight:700;color:#C9A84C;font-size:.95rem;}
+    .pac-orig{font-size:.7rem;color:#7A6850;text-decoration:line-through;margin-left:.3rem;}
+    .pac-stock{font-size:.75rem;color:#7A6850;}
+
+    .batch-bar{display:none;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem 1rem;background:#1A1410;position:sticky;top:0;z-index:5;}
+    .batch-bar.show{display:flex;}
+    .batch-bar-info{color:#E8C97A;font-size:.82rem;font-weight:600;flex-shrink:0;}
+    .batch-bar-actions{display:flex;gap:.5rem;flex:1;justify-content:flex-end;flex-wrap:wrap;}
+    .batch-btn{padding:7px 12px;border-radius:4px;font-size:.74rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;}
+    .batch-btn-on{background:#2D8C5F;color:#FFFFFF;}
+    .batch-btn-off{background:#7A6850;color:#FFFFFF;}
+    .batch-btn-del{background:#C0392B;color:#FFFFFF;}
+    .batch-btn-cancel{background:rgba(255,255,255,0.12);color:#FFFFFF;}
+    .select-all-row{display:none;align-items:center;gap:.6rem;padding:.7rem 1rem;border-bottom:1px solid rgba(0,0,0,.06);font-size:.8rem;color:#7A6850;}
+    .select-all-row input{width:18px;height:18px;accent-color:#C9A84C;}
+
+    /* ===== MOBILE ORDER CARDS =====
+       Same rationale as product cards: the orders table needs horizontal
+       scroll to reach 时间/操作 (time / status-change control) on narrow
+       screens, so this card layout keeps everything visible at once while
+       still letting the status dropdown be changed inline. */
+    .order-cards,.user-cards{display:none;}
+    .order-admin-card{padding:.9rem 1rem;border-bottom:1px solid rgba(0,0,0,.06);}
+    .order-admin-card:last-child{border-bottom:none;}
+    .oac-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.4rem;}
+    .oac-id{font-family:monospace;font-size:.72rem;color:#7A6850;}
+    .oac-total{font-weight:700;color:#C9A84C;font-size:.95rem;}
+    .oac-buyer{font-weight:600;font-size:.85rem;margin-bottom:.25rem;}
+    .oac-items{font-size:.78rem;color:#7A6850;margin-bottom:.5rem;line-height:1.4;}
+    .oac-bottom{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;}
+    .oac-time{font-size:.72rem;color:#7A6850;}
+    .oac-status-select{font-size:.78rem;padding:6px 10px;border:1px solid rgba(0,0,0,.12);border-radius:4px;background:#FFFFFF;}
+
+    .user-admin-card{display:flex;justify-content:space-between;align-items:center;gap:.75rem;padding:.9rem 1rem;border-bottom:1px solid rgba(0,0,0,.06);}
+    .user-admin-card:last-child{border-bottom:none;}
+    .uac-name{font-weight:600;font-size:.88rem;margin-bottom:.2rem;}
+    .uac-email{font-size:.76rem;color:#7A6850;margin-bottom:.35rem;}
+    .uac-meta{display:flex;gap:.4rem;flex-wrap:wrap;}
+    .uac-date{font-size:.7rem;color:#7A6850;text-align:right;flex-shrink:0;}
     .orders-table-wrap{overflow-x:auto;}
     .order-status{padding:3px 10px;border-radius:3px;font-size:.7rem;font-weight:600;letter-spacing:.04em;}
     .os-pending{background:#FEF3CD;color:#7A5C00;}
@@ -134,14 +196,104 @@ if (entered !== ADMIN_PASSWORD) {
     
     @media(max-width:900px){
       .stats-grid{grid-template-columns:repeat(2,1fr);}
-      .admin-sidebar{transform:translateX(-100%);transition:transform .3s;}
-      .admin-sidebar.open{transform:none;}
-      .admin-main{margin-left:0;}
+      /* Mobile: the vertical sidebar becomes a horizontal tab bar pinned to
+         the top of the screen instead of sliding off-canvas. Previously it
+         was hidden with transform:translateX(-100%) and there was no
+         hamburger/button anywhere to bring it back, so on mobile the whole
+         nav menu was simply invisible and unreachable. */
+      .admin-sidebar{
+        position:fixed;top:0;left:0;right:0;bottom:auto;
+        width:100%;height:auto;
+        transform:none;
+        flex-direction:row;
+        align-items:center;
+        z-index:100;
+        box-shadow:0 2px 12px rgba(0,0,0,.25);
+      }
+      .admin-logo{
+        padding:.6rem .85rem;
+        border-bottom:none;
+        border-right:1px solid rgba(201,168,76,0.12);
+        flex-shrink:0;
+        white-space:nowrap;
+      }
+      /* "OnePrime Admin" wordmark wastes width on a narrow top bar where
+         every pixel matters for reaching the nav tabs — replace it with
+         just the small gold logo mark. */
+      .admin-logo-text{font-size:0;}
+      .admin-logo-text::before{
+        content:'';
+        display:block;
+        width:28px;height:28px;
+        background:url('img/icon-32.png') center/cover;
+        border-radius:6px;
+      }
+      .admin-logo-sub{display:none;}
+      .admin-nav{
+        flex:1;
+        display:flex;
+        flex-direction:row;
+        padding:0;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+      }
+      .admin-nav::-webkit-scrollbar{display:none;}
+      .admin-nav-item{
+        flex-direction:column;
+        gap:.2rem;
+        padding:.6rem .9rem;
+        border-left:none;
+        border-bottom:3px solid transparent;
+        white-space:nowrap;
+        flex-shrink:0;
+      }
+      .admin-nav-item.active{
+        background:rgba(201,168,76,0.1);
+        border-left-color:transparent;
+        border-bottom-color:#C9A84C;
+      }
+      .admin-nav-icon{font-size:1.1rem;}
+      .admin-footer{
+        padding:.75rem 1rem;
+        border-top:none;
+        border-left:1px solid rgba(255,255,255,0.08);
+        flex-shrink:0;
+      }
+      .admin-logout{
+        width:auto;
+        white-space:nowrap;
+        padding:8px 12px;
+      }
+      .admin-main{
+        margin-left:0;
+        /* push content below the now-fixed top tab bar */
+        margin-top:60px;
+      }
+
+      /* Product list: swap the table (needs horizontal scroll) for a card
+         list where every field — image, name, category, price, original
+         price, stock, status — is visible without scrolling sideways.
+         Tapping a card opens it for editing; checkboxes enable batch
+         select for bulk 上架/下架/删除. */
+      .products-table-wrap{display:none;}
+      .product-cards{display:block;}
+      .select-all-row{display:flex;}
+      .orders-table-only{display:none;}
+      .order-cards{display:block;}
+      .users-table-only{display:none;}
+      .user-cards{display:block;}
     }
     @media(max-width:600px){
       .stats-grid{grid-template-columns:1fr 1fr;}
       .fm-row{grid-template-columns:1fr;}
       .admin-search input{width:120px;}
+      .admin-nav-item{padding:.55rem .7rem;font-size:.72rem;}
+      .admin-main{margin-top:58px;padding:1.25rem 1rem;}
+      .admin-topbar{flex-wrap:wrap;gap:.5rem;}
+      .admin-card-header{flex-direction:column;align-items:stretch;}
+      .admin-card-header > div:first-child{flex-direction:column;align-items:stretch;}
+      .admin-search input{width:100%;}
     }
   </style>
 </head>
@@ -186,7 +338,7 @@ if (entered !== ADMIN_PASSWORD) {
         </div>
         <div class="admin-card">
           <div class="admin-card-header"><div class="admin-card-title">各分类商品分布</div></div>
-          <div style="padding:1.5rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;" id="catStatsGrid"></div>
+          <div class="cat-stats-grid" id="catStatsGrid"></div>
         </div>
         <div style="margin-top:1.25rem;" class="admin-card">
           <div class="admin-card-header"><div class="admin-card-title">最近订单</div></div>
@@ -210,12 +362,26 @@ if (entered !== ADMIN_PASSWORD) {
             </div>
             <button class="admin-btn admin-btn-gold" onclick="openProductForm()">+ 添加商品</button>
           </div>
-          <div class="orders-table-wrap">
+          <div class="batch-bar" id="batchBar">
+            <span class="batch-bar-info" id="batchBarInfo">已选择 0 项</span>
+            <div class="batch-bar-actions">
+              <button class="batch-btn batch-btn-on" onclick="batchSetActive(true)">批量上架</button>
+              <button class="batch-btn batch-btn-off" onclick="batchSetActive(false)">批量下架</button>
+              <button class="batch-btn batch-btn-del" onclick="batchDelete()">批量删除</button>
+              <button class="batch-btn batch-btn-cancel" onclick="clearSelection()">取消</button>
+            </div>
+          </div>
+          <div class="orders-table-wrap products-table-wrap">
             <table>
               <thead><tr><th>图片</th><th>商品名称</th><th>分类</th><th>价格</th><th>原价</th><th>库存</th><th>状态</th><th>操作</th></tr></thead>
               <tbody id="adminProductsBody"></tbody>
             </table>
           </div>
+          <div class="select-all-row" id="selectAllRow">
+            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)">
+            <span>全选</span>
+          </div>
+          <div class="product-cards" id="productCards"></div>
           <div class="pagination" id="prodPagination"></div>
         </div>
       </div>
@@ -234,10 +400,11 @@ if (entered !== ADMIN_PASSWORD) {
               <option value="cancelled">已取消</option>
             </select>
           </div>
-          <div class="orders-table-wrap">
+          <div class="orders-table-wrap orders-table-only">
             <table><thead><tr><th>订单号</th><th>买家</th><th>商品</th><th>金额</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
             <tbody id="ordersBody"></tbody></table>
           </div>
+          <div class="order-cards" id="orderCards"></div>
         </div>
       </div>
 
@@ -245,10 +412,11 @@ if (entered !== ADMIN_PASSWORD) {
       <div class="admin-panel" id="panel-users">
         <div class="admin-card">
           <div class="admin-card-header"><div class="admin-card-title">注册用户</div></div>
-          <div class="orders-table-wrap">
+          <div class="orders-table-wrap users-table-only">
             <table><thead><tr><th>用户名</th><th>邮箱</th><th>注册方式</th><th>注册时间</th><th>状态</th></tr></thead>
             <tbody id="usersBody"></tbody></table>
           </div>
+          <div class="user-cards" id="userCards"></div>
         </div>
       </div>
 
@@ -256,7 +424,7 @@ if (entered !== ADMIN_PASSWORD) {
       <div class="admin-panel" id="panel-categories">
         <div class="admin-card">
           <div class="admin-card-header"><div class="admin-card-title">分类管理</div></div>
-          <div style="padding:1.5rem;display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;" id="catManageGrid"></div>
+          <div class="cat-manage-grid" id="catManageGrid"></div>
         </div>
       </div>
 
