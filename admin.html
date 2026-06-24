@@ -222,6 +222,20 @@ if (entered !== ADMIN_PASSWORD) {
     .revenue-demo-note{padding:1rem 1.5rem 1.5rem;font-size:.76rem;color:#7A6850;line-height:1.6;border-top:1px solid rgba(0,0,0,.06);}
     .revenue-demo-note strong{color:#C0392B;}
 
+    /* ===== ADMIN: MEMBERSHIP MANAGEMENT ===== */
+    .membership-admin-note{padding:1rem 1.5rem;font-size:.8rem;color:#7A6850;line-height:1.6;background:#FDF8EE;border-bottom:1px solid rgba(0,0,0,.06);}
+    .membership-admin-note strong{color:#C0392B;}
+    .tier-admin-grid{padding:1.5rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;}
+    .tier-admin-card{border:1px solid rgba(0,0,0,.07);border-radius:8px;padding:1.25rem;}
+    .tier-admin-card h4{font-family:'Playfair Display',serif;font-size:1.05rem;margin-bottom:1rem;}
+    .tier-admin-field{margin-bottom:.9rem;}
+    .tier-admin-field label{display:block;font-size:.72rem;color:#7A6850;margin-bottom:.3rem;letter-spacing:.03em;}
+    .tier-admin-field input{width:100%;padding:8px 12px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.85rem;}
+    .tier-admin-field input:focus{outline:none;border-color:#C9A84C;}
+    .tier-admin-field select{width:100%;padding:8px 12px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.85rem;background:#FFFFFF;}
+    .tier-admin-field select:focus{outline:none;border-color:#C9A84C;}
+    .tier-admin-save{width:100%;margin-top:.5rem;}
+
     @media(max-width:900px){
       .stats-grid{grid-template-columns:repeat(2,1fr);}
       /* Mobile: the vertical sidebar becomes a horizontal tab bar pinned to
@@ -317,6 +331,7 @@ if (entered !== ADMIN_PASSWORD) {
          into illegible multi-line text. */
       .cat-stats-grid{grid-template-columns:repeat(2,1fr);}
       .revenue-summary{grid-template-columns:repeat(3,1fr);}
+      .tier-admin-grid{grid-template-columns:1fr;}
     }
     @media(max-width:600px){
       .stats-grid{grid-template-columns:1fr 1fr;}
@@ -355,6 +370,7 @@ if (entered !== ADMIN_PASSWORD) {
         <div class="admin-nav-item" onclick="showAdminPanel('orders')"><span class="admin-nav-icon">🧾</span>订单管理</div>
         <div class="admin-nav-item" onclick="showAdminPanel('users')"><span class="admin-nav-icon">👥</span>用户管理</div>
         <div class="admin-nav-item" onclick="showAdminPanel('revenue')"><span class="admin-nav-icon">📈</span>收入趋势</div>
+        <div class="admin-nav-item" onclick="showAdminPanel('membership')"><span class="admin-nav-icon">💎</span>会员管理</div>
       </div>
       <div class="admin-footer">
         <button class="admin-logout" onclick="logout()">退出后台</button>
@@ -477,6 +493,26 @@ if (entered !== ADMIN_PASSWORD) {
             <svg id="revenueChart" class="revenue-chart" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
           </div>
           <div class="revenue-demo-note">📌 图表包含<strong>示例历史数据</strong>（标注为"示例"的订单）用于展示走势效果；真实订单数据会随业务增长自动汇入同一张图，示例数据不计入"数据概览"页的总订单数/收入统计。</div>
+        </div>
+      </div>
+
+      <!-- MEMBERSHIP -->
+      <div class="admin-panel" id="panel-membership">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">会员等级设置</div>
+          </div>
+          <div class="membership-admin-note">
+            ⚠️ 修改年费、折扣或消费门槛会立即影响全站所有会员的价格显示与升级条件。会员等级仅基于<strong>用户自己的付费/消费记录</strong>，与是否介绍其他客户无关。
+          </div>
+          <div class="tier-admin-grid" id="tierAdminGrid"></div>
+        </div>
+        <div style="margin-top:1.25rem;" class="admin-card">
+          <div class="admin-card-header"><div class="admin-card-title">会员分布</div></div>
+          <div class="orders-table-wrap">
+            <table><thead><tr><th>等级</th><th>年费</th><th>折扣</th><th>盲盒礼包</th><th>会员人数</th></tr></thead>
+            <tbody id="membershipStatsBody"></tbody></table>
+          </div>
         </div>
       </div>
 

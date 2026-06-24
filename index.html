@@ -68,6 +68,7 @@
         <li><a onclick="showCategory('health')" data-page="health">💊 大健康</a></li>
         <li><a onclick="showCategory('beauty')" data-page="beauty">✨ 美妆护肤</a></li>
         <li><a onclick="showCategory('food')" data-page="food">🌿 功能性食品</a></li>
+        <li><a href="membership.html" style="color:var(--gold);">💎 会员权益</a></li>
       </ul>
       <div class="sh-right">
         <button class="cart-btn" onclick="toggleCart()">
@@ -100,6 +101,7 @@
       <a onclick="showCategory('health');toggleMobileNav()">💊 大健康</a>
       <a onclick="showCategory('beauty');toggleMobileNav()">✨ 美妆护肤</a>
       <a onclick="showCategory('food');toggleMobileNav()">🌿 功能性食品</a>
+      <a href="membership.html" style="color:var(--gold);">💎 会员权益</a>
       <a onclick="toggleCart();toggleMobileNav()" style="color:var(--gold);">🛒 购物车</a>
       <a id="mobileLoginLink" onclick="openAuthModal();toggleMobileNav()" style="color:rgba(255,255,255,0.5);font-size:.9rem;">登录 / 注册</a>
       <a id="mobileLogoutLink" onclick="logout();toggleMobileNav()" style="display:none;color:rgba(255,255,255,0.4);font-size:.85rem;">退出登录</a>
@@ -137,6 +139,14 @@
           <div class="cat-count" id="cat-count-food">— 款</div>
         </div>
       </div>
+      <a class="membership-banner" href="membership.html">
+        <div class="mb-icon">💎</div>
+        <div class="mb-text">
+          <div class="mb-title">加入 OnePrime 会员，全场最高享<em>8折</em>优惠</div>
+          <div class="mb-sub">普通会员 ¥99/年 · 掌柜 ¥299/年（9折） · 经销商 ¥599/年（8折）</div>
+        </div>
+        <div class="mb-arrow">查看权益 →</div>
+      </a>
       <div class="products-section">
         <div class="products-header">
           <h2 class="products-title">全部商品</h2>
@@ -212,6 +222,7 @@
             <div class="os-title">订单汇总</div>
             <div class="os-items" id="ckItems"></div>
             <hr class="os-divider">
+            <div id="ckNextTierHint"></div>
             <div class="os-total"><span class="os-total-label">合计</span><span class="os-total-price" id="ckTotal">¥0</span></div>
             <button class="place-order-btn" onclick="placeOrder()">立即下单</button>
             <div class="security-note">🔒 安全支付 · 7天无理由退换 · 全程溯源可查</div>
