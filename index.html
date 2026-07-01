@@ -4,13 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>OnePrime 恒旺国际 · 品质生活商城</title>
-  <link rel="icon" type="image/x-icon" href="img/favicon.ico">
-  <link rel="icon" type="image/png" sizes="16x16" href="img/icon-16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=202507011116">
 </head>
 <body>
 
@@ -31,7 +26,7 @@
           Continue with Google
         </button>
         <button class="social-btn" onclick="socialLogin('Apple')">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M14.048 9.368c-.02-1.98 1.622-2.944 1.694-2.99-.924-1.35-2.36-1.535-2.87-1.552-1.22-.124-2.384.72-3.002.72-.618 0-1.573-.704-2.587-.684-1.327.02-2.558.773-3.24 1.96-1.387 2.4-.354 5.962 1 7.908.667.956 1.462 2.032 2.503 1.994 1.007-.04 1.386-.648 2.603-.648 1.217 0 1.558.648 2.616.628 1.083-.02 1.766-.977 2.428-1.937.768-1.107 1.082-2.19 1.1-2.244-.024-.01-2.1-.806-2.123-3.155zm-1.99-5.797c.553-.67.927-1.596.824-2.521-.796.033-1.76.53-2.33 1.199-.51.59-.959 1.53-.84 2.435.89.069 1.793-.453 2.346-1.113z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M14.048 9.368c-.02-1.98 1.622-2.944 1.694-2.99--.924-1.35-2.36-1.535-2.87-1.552-1.22-.124-2.384.72-3.002.72-.618 0-1.573-.704-2.587-.684-1.327.02-2.558.773-3.24 1.96-1.387 2.4-.354 5.962 1 7.908.667.956 1.462 2.032 2.503 1.994 1.007-.04 1.386-.648 2.603-.648 1.217 0 1.558.648 2.616.628 1.083-.02 1.766-.977 2.428-1.937.768-1.107 1.082-2.19 1.1-2.244-.024-.01-2.1-.806-2.123-3.155zm-1.99-5.797c.553-.67.927-1.596.824-2.521-.796.033-1.76.53-2.33 1.199-.51.59-.959 1.53-.84 2.435.89.069 1.793-.453 2.346-1.113z"/></svg>
           Continue with Apple
         </button>
         <button class="social-btn" onclick="socialLogin('Facebook')">
@@ -143,7 +138,7 @@
         <div class="mb-icon">💎</div>
         <div class="mb-text">
           <div class="mb-title">加入 OnePrime 会员，全场最高享<em>8折</em>优惠</div>
-          <div class="mb-sub">普通会员 ¥99/年 · 掌柜 ¥299/年（9折） · 经销商 ¥599/年（8折）</div>
+          <div class="mb-sub">普通会员 ¥199/年 · 掌柜 ¥399/年（9折） · 经销商 ¥999/年（8折）</div>
         </div>
         <div class="mb-arrow">查看权益 →</div>
       </a>
@@ -252,6 +247,98 @@
     </div>
   </div>
 
-  <script src="js/script.js"></script>
+  
+
+  <!-- PRODUCT FORM MODAL -->
+  <div class="form-modal-overlay hidden" id="productFormModal">
+    <div class="form-modal">
+      <div class="fm-header">
+        <div class="fm-title" id="fmTitle">添加商品</div>
+        <button class="fm-close" onclick="closeProductForm()">✕</button>
+      </div>
+      <div class="fm-body">
+        <input type="hidden" id="fmId">
+        <div class="fm-row">
+          <div class="fm-group">
+            <label class="fm-label">商品名称 <em>*</em></label>
+            <input class="fm-input" id="fmName" placeholder="输入商品名称" />
+          </div>
+          <div class="fm-group">
+            <label class="fm-label">英文名称</label>
+            <input class="fm-input" id="fmNameEn" placeholder="Product name in English" />
+          </div>
+        </div>
+        <div class="fm-row full">
+          <div class="fm-group">
+            <label class="fm-label">商品描述 <em>*</em></label>
+            <textarea class="fm-textarea" id="fmDesc" placeholder="详细描述商品特点、成分、使用方法等"></textarea>
+          </div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-group">
+            <label class="fm-label">商品分类 <em>*</em></label>
+            <select class="fm-select" id="fmCat">
+              <option value="wine">🍷 红酒</option>
+              <option value="health">💊 大健康</option>
+              <option value="beauty">✨ 美妆护肤</option>
+              <option value="food">🌿 功能性食品</option>
+            </select>
+          </div>
+          <div class="fm-group">
+            <label class="fm-label">库存数量</label>
+            <input class="fm-input" id="fmStock" type="number" placeholder="0" min="0" />
+          </div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-group">
+            <label class="fm-label">售价（元） <em>*</em></label>
+            <input class="fm-input" id="fmPrice" type="number" placeholder="0.00" step="0.01" />
+          </div>
+          <div class="fm-group">
+            <label class="fm-label">原价（元，可选）</label>
+            <input class="fm-input" id="fmOrigPrice" type="number" placeholder="0.00" step="0.01" />
+          </div>
+        </div>
+        <div class="fm-row full">
+          <div class="fm-group">
+            <label class="fm-label">商品图片</label>
+            <div class="img-upload-area" id="imgUploadArea">
+              <input type="file" id="fmImg" accept="image/*" onchange="handleImgUpload(event)">
+              <div class="img-upload-icon">📷</div>
+              <div class="img-upload-text">点击或拖拽上传图片<br><span style="font-size:.72rem;color:#aaa;">支持 JPG、PNG、WebP，建议正方形，≤ 5MB</span></div>
+            </div>
+            <img id="imgPreview" class="img-preview hidden" />
+            <input type="hidden" id="fmImgData">
+          </div>
+        </div>
+        <div class="fm-row full">
+          <div class="fm-group">
+            <label class="fm-label">上架状态</label>
+            <div class="toggle-wrap">
+              <div class="toggle on" id="fmActiveToggle" onclick="toggleActive()"></div>
+              <span class="toggle-label" id="fmActiveLabel">已上架</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fm-footer">
+        <button class="admin-btn admin-btn-outline" onclick="closeProductForm()">取消</button>
+        <button class="admin-btn admin-btn-gold" onclick="saveProduct()">保存商品</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/script.js?v=202507011116"></script>
+
+  <!-- ===== SERVICE WORKER (2-day cache auto-expiry) ===== -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("/sw.js").catch(function(err) {
+          console.warn("SW registration failed:", err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

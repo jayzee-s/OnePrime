@@ -10,13 +10,13 @@
   <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=202507011116">
 </head>
 <body>
 
   <div class="toast" id="toast"></div>
 
-  <!-- ===== AUTH MODAL (same as index.html, needed if a guest tries to upgrade) ===== -->
+  <!-- ===== AUTH MODAL ===== -->
   <div class="screen" id="authScreen" style="position:fixed;inset:0;z-index:500;background:rgba(10,6,4,0.88);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:1rem;min-height:0;">
     <div class="auth-box" style="position:relative;">
       <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
@@ -55,6 +55,18 @@
     </div>
   </div>
 
+  <!-- ===== CART DRAWER (shared with index.html — membership page
+       lets you browse back to shop without losing cart contents) ===== -->
+  <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-head">
+      <h3>购物车</h3>
+      <button class="cart-close" onclick="toggleCart()">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-foot" id="cartFoot"></div>
+  </div>
+
   <div class="screen active" id="shopScreen">
     <header class="shop-header">
       <a class="sh-logo" href="index.html">OnePrime<span>恒旺国际</span></a>
@@ -67,6 +79,10 @@
         <li><a class="active" href="membership.html" style="color:var(--gold);">💎 会员权益</a></li>
       </ul>
       <div class="sh-right">
+        <button class="cart-btn" onclick="toggleCart()">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
         <div id="headerGuest">
           <button class="nav-login-btn" onclick="openAuthModal()">登录 / 注册</button>
         </div>
@@ -89,6 +105,7 @@
       <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
       <a href="index.html">首页</a>
       <a href="membership.html" style="color:var(--gold);">💎 会员权益</a>
+      <a onclick="toggleCart();toggleMobileNav()" style="color:var(--gold);">🛒 购物车</a>
       <a id="mobileLoginLink" onclick="openAuthModal();toggleMobileNav()" style="color:rgba(255,255,255,0.5);font-size:.9rem;">登录 / 注册</a>
       <a id="mobileLogoutLink" onclick="logout();toggleMobileNav()" style="display:none;color:rgba(255,255,255,0.4);font-size:.85rem;">退出登录</a>
     </div>
@@ -123,7 +140,18 @@
 
   </div>
 
-  <script src="js/script.js"></script>
-  <script src="js/membership.js"></script>
+  <script src="js/script.js?v=202507011116"></script>
+  <script src="js/membership.js?v=202507011116"></script>
+
+  <!-- ===== SERVICE WORKER (2-day cache auto-expiry) ===== -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("/sw.js").catch(function(err) {
+          console.warn("SW registration failed:", err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

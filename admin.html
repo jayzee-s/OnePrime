@@ -27,7 +27,7 @@ if (entered !== ADMIN_PASSWORD) {
   <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=202507011116">
   <style>
     /* Admin-specific overrides */
     body{background:#F0EDE8;}
@@ -75,6 +75,10 @@ if (entered !== ADMIN_PASSWORD) {
     .filter-select:focus{outline:none;border-color:#C9A84C;}
     table{width:100%;border-collapse:collapse;}
     th{text-align:left;font-size:.7rem;letter-spacing:.08em;color:#7A6850;padding:.75rem 1.25rem;border-bottom:1px solid rgba(0,0,0,.06);font-weight:600;}
+    th.sortable{cursor:pointer;user-select:none;}
+    th.sortable:hover{color:#2B2218;}
+    th.sortable .sort-arrow{font-size:.65rem;margin-left:.25rem;opacity:.5;}
+    th.sortable.sort-active .sort-arrow{opacity:1;color:#C9A84C;}
     td{padding:.9rem 1.25rem;font-size:.83rem;border-bottom:1px solid rgba(0,0,0,.04);vertical-align:middle;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:rgba(0,0,0,.01);}
@@ -235,89 +239,40 @@ if (entered !== ADMIN_PASSWORD) {
     .tier-admin-field select{width:100%;padding:8px 12px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.85rem;background:#FFFFFF;}
     .tier-admin-field select:focus{outline:none;border-color:#C9A84C;}
     .tier-admin-save{width:100%;margin-top:.5rem;}
+    .tier-box-picker{border:1px solid rgba(0,0,0,.1);border-radius:6px;max-height:160px;overflow-y:auto;padding:.5rem;}
+    .tier-box-picker-item{display:flex;align-items:center;gap:.5rem;padding:.35rem .25rem;font-size:.8rem;}
+    .tier-box-picker-item input{width:16px;height:16px;accent-color:#C9A84C;flex-shrink:0;}
+    .tier-box-picker-empty{font-size:.78rem;color:#7A6850;padding:.5rem .25rem;}
+
+    /* ===== MOBILE ADMIN HAMBURGER NAV =====
+       The horizontal scrollable tab bar got too crowded once 收入趋势 and
+       会员管理 were added — six tabs no longer fit a phone-width strip
+       without awkward sideways scrolling to find them. Replaced with the
+       same hamburger + full-screen overlay pattern already used on
+       index.html for consistency and because it scales to any number of
+       sections. */
+    .admin-ham-btn{display:none;background:none;border:none;color:#C9A84C;flex-direction:column;gap:4px;padding:.5rem;cursor:pointer;}
+    .admin-ham-btn span{width:22px;height:1.5px;background:currentColor;display:block;}
+    .admin-mobile-nav{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,20,16,0.98);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;}
+    .admin-mobile-nav.open{display:flex;}
+    .admin-mobile-nav-item{color:rgba(255,255,255,0.8);font-size:1.15rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;}
+    .admin-mobile-nav-item:hover,.admin-mobile-nav-item.active{color:#C9A84C;}
+    .admin-mobile-nav-close{position:absolute;top:1.5rem;right:1.5rem;background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.5rem;cursor:pointer;}
+    .admin-mobile-nav-logout{margin-top:1rem;background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);padding:8px 20px;border-radius:4px;font-size:.85rem;cursor:pointer;}
 
     @media(max-width:900px){
       .stats-grid{grid-template-columns:repeat(2,1fr);}
-      /* Mobile: the vertical sidebar becomes a horizontal tab bar pinned to
-         the top of the screen instead of sliding off-canvas. Previously it
-         was hidden with transform:translateX(-100%) and there was no
-         hamburger/button anywhere to bring it back, so on mobile the whole
-         nav menu was simply invisible and unreachable. */
-      .admin-sidebar{
-        position:fixed;top:0;left:0;right:0;bottom:auto;
-        width:100%;height:auto;
-        transform:none;
-        flex-direction:row;
-        align-items:center;
-        z-index:100;
-        box-shadow:0 2px 12px rgba(0,0,0,.25);
-      }
-      .admin-logo{
-        padding:.6rem .85rem;
-        border-bottom:none;
-        border-right:1px solid rgba(201,168,76,0.12);
-        flex-shrink:0;
-        white-space:nowrap;
-      }
-      /* "OnePrime Admin" wordmark wastes width on a narrow top bar where
-         every pixel matters for reaching the nav tabs — replace it with
-         just the small gold logo mark. */
-      .admin-logo-text{font-size:0;}
-      .admin-logo-text::before{
-        content:'';
-        display:block;
-        width:28px;height:28px;
-        background:url('img/icon-32.png') center/cover;
-        border-radius:6px;
-      }
-      .admin-logo-sub{display:none;}
-      .admin-nav{
-        flex:1;
-        display:flex;
-        flex-direction:row;
-        padding:0;
-        overflow-x:auto;
-        -webkit-overflow-scrolling:touch;
-        scrollbar-width:none;
-      }
-      .admin-nav::-webkit-scrollbar{display:none;}
-      .admin-nav-item{
-        flex-direction:column;
-        gap:.2rem;
-        padding:.6rem .9rem;
-        border-left:none;
-        border-bottom:3px solid transparent;
-        white-space:nowrap;
-        flex-shrink:0;
-      }
-      .admin-nav-item.active{
-        background:rgba(201,168,76,0.1);
-        border-left-color:transparent;
-        border-bottom-color:#C9A84C;
-      }
-      .admin-nav-icon{font-size:1.1rem;}
-      .admin-footer{
-        padding:.75rem 1rem;
-        border-top:none;
-        border-left:1px solid rgba(255,255,255,0.08);
-        flex-shrink:0;
-      }
-      .admin-logout{
-        width:auto;
-        white-space:nowrap;
-        padding:8px 12px;
-      }
-      .admin-main{
-        margin-left:0;
-        /* push content below the now-fixed top tab bar */
-        margin-top:60px;
-      }
+      /* Mobile: the sidebar/top-tab-bar is hidden entirely in favor of a
+         hamburger button that opens a full-screen nav overlay (see
+         .admin-mobile-nav above) — there are too many sections (6) for a
+         horizontal scroller to stay comfortably usable on a phone. */
+      .admin-sidebar{display:none;}
+      .admin-main{margin-left:0;margin-top:0;}
+      .admin-ham-btn{display:flex;}
+      .admin-topbar{position:sticky;top:0;z-index:20;background:#F0EDE8;margin:-2rem -2rem 1.5rem;padding:1rem 1.25rem;box-shadow:0 2px 12px rgba(0,0,0,.06);}
 
-      /* Product list: swap the table (needs horizontal scroll) for a card
-         list where every field — image, name, category, price, original
-         price, stock, status — is visible without scrolling sideways.
-         Tapping a card opens it for editing; checkboxes enable batch
-         select for bulk 上架/下架/删除. */
+      /* Swap tables for card lists on the products/orders/users panels — see
+         the comment above .product-cards,.order-cards,.user-cards for why. */
       .products-table-wrap{display:none;}
       .product-cards{display:block;}
       .select-all-row{display:flex;}
@@ -337,9 +292,8 @@ if (entered !== ADMIN_PASSWORD) {
       .stats-grid{grid-template-columns:1fr 1fr;}
       .fm-row{grid-template-columns:1fr;}
       .admin-search input{width:120px;}
-      .admin-nav-item{padding:.55rem .7rem;font-size:.72rem;}
-      .admin-main{margin-top:58px;padding:1.25rem 1rem;}
-      .admin-topbar{flex-wrap:wrap;gap:.5rem;}
+      .admin-main{padding:1.25rem 1rem;}
+      .admin-topbar{margin:-1.25rem -1rem 1.25rem;flex-wrap:wrap;gap:.5rem;}
       .admin-card-header{flex-direction:column;align-items:stretch;}
       .admin-card-header > div:first-child{flex-direction:column;align-items:stretch;}
       .admin-search input{width:100%;}
@@ -356,6 +310,18 @@ if (entered !== ADMIN_PASSWORD) {
 <body>
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
+
+  <!-- ===== ADMIN MOBILE NAV OVERLAY ===== -->
+  <div class="admin-mobile-nav" id="adminMobileNav">
+    <button class="admin-mobile-nav-close" onclick="toggleAdminMobileNav()">✕</button>
+    <div class="admin-mobile-nav-item" data-panel="dashboard" onclick="showAdminPanel('dashboard');toggleAdminMobileNav()">📊 数据概览</div>
+    <div class="admin-mobile-nav-item" data-panel="products" onclick="showAdminPanel('products');toggleAdminMobileNav()">📦 商品管理</div>
+    <div class="admin-mobile-nav-item" data-panel="orders" onclick="showAdminPanel('orders');toggleAdminMobileNav()">🧾 订单管理</div>
+    <div class="admin-mobile-nav-item" data-panel="users" onclick="showAdminPanel('users');toggleAdminMobileNav()">👥 用户管理</div>
+    <div class="admin-mobile-nav-item" data-panel="revenue" onclick="showAdminPanel('revenue');toggleAdminMobileNav()">📈 收入趋势</div>
+    <div class="admin-mobile-nav-item" data-panel="membership" onclick="showAdminPanel('membership');toggleAdminMobileNav()">💎 会员管理</div>
+    <button class="admin-mobile-nav-logout" onclick="logout()">退出后台</button>
+  </div>
 
   <!-- ===== ADMIN SCREEN ===== -->
   <div id="adminScreen">
@@ -378,6 +344,7 @@ if (entered !== ADMIN_PASSWORD) {
     </nav>
     <main class="admin-main">
       <div class="admin-topbar">
+        <button class="admin-ham-btn" onclick="toggleAdminMobileNav()"><span></span><span></span><span></span></button>
         <div class="admin-page-title" id="adminPageTitle">数据概览</div>
         <div style="display:flex;align-items:center;gap:.75rem;">
           <div class="sh-avatar" id="adminAvatar">A</div>
@@ -430,7 +397,7 @@ if (entered !== ADMIN_PASSWORD) {
           </div>
           <div class="orders-table-wrap products-table-wrap">
             <table>
-              <thead><tr><th>图片</th><th>商品名称</th><th>分类</th><th>价格</th><th>原价</th><th>库存</th><th>状态</th><th>操作</th></tr></thead>
+              <thead><tr><th>图片</th><th>商品名称</th><th>分类</th><th>价格</th><th>建议零售价</th><th>库存</th><th>状态</th><th>操作</th></tr></thead>
               <tbody id="adminProductsBody"></tbody>
             </table>
           </div>
@@ -447,19 +414,43 @@ if (entered !== ADMIN_PASSWORD) {
       <div class="admin-panel" id="panel-orders">
         <div class="admin-card">
           <div class="admin-card-header">
-            <div class="admin-card-title">所有订单</div>
-            <select class="filter-select" id="orderStatusFilter" onchange="renderOrders()">
-              <option value="all">所有状态</option>
-              <option value="pending">待付款</option>
-              <option value="processing">处理中</option>
-              <option value="shipped">已发货</option>
-              <option value="completed">已完成</option>
-              <option value="cancelled">已取消</option>
-            </select>
+            <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+              <div class="admin-search"><input type="text" placeholder="搜索订单号/买家/商品…" id="orderSearch" oninput="renderOrders()"></div>
+              <select class="filter-select" id="orderStatusFilter" onchange="renderOrders()">
+                <option value="all">所有状态</option>
+                <option value="pending">待付款</option>
+                <option value="processing">处理中</option>
+                <option value="shipped">已发货</option>
+                <option value="completed">已完成</option>
+                <option value="cancelled">已取消</option>
+              </select>
+            </div>
+          </div>
+          <div class="batch-bar" id="orderBatchBar">
+            <span class="batch-bar-info" id="orderBatchBarInfo">已选择 0 项</span>
+            <div class="batch-bar-actions">
+              <select class="filter-select" id="orderBatchStatusSelect" style="background:#FFFFFF;">
+                <option value="pending">待付款</option>
+                <option value="processing">处理中</option>
+                <option value="shipped">已发货</option>
+                <option value="completed">已完成</option>
+                <option value="cancelled">已取消</option>
+              </select>
+              <button class="batch-btn batch-btn-on" onclick="batchSetOrderStatus()">批量设置状态</button>
+              <button class="batch-btn batch-btn-del" onclick="batchDeleteOrders()">批量删除</button>
+              <button class="batch-btn batch-btn-cancel" onclick="clearOrderSelection()">取消</button>
+            </div>
           </div>
           <div class="orders-table-wrap orders-table-only">
-            <table><thead><tr><th>订单号</th><th>买家</th><th>商品</th><th>金额</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+            <table><thead><tr>
+              <th style="width:36px;"><input type="checkbox" id="orderSelectAllCheckbox" onchange="toggleSelectAllOrders(this.checked)"></th>
+              <th>订单号</th><th>买家</th><th>商品</th><th>金额</th><th>状态</th><th>时间</th><th>操作</th>
+            </tr></thead>
             <tbody id="ordersBody"></tbody></table>
+          </div>
+          <div class="select-all-row" id="orderSelectAllRow">
+            <input type="checkbox" id="orderSelectAllCheckboxMobile" onchange="toggleSelectAllOrders(this.checked)">
+            <span>全选</span>
           </div>
           <div class="order-cards" id="orderCards"></div>
         </div>
@@ -468,10 +459,47 @@ if (entered !== ADMIN_PASSWORD) {
       <!-- USERS -->
       <div class="admin-panel" id="panel-users">
         <div class="admin-card">
-          <div class="admin-card-header"><div class="admin-card-title">注册用户</div></div>
+          <div class="admin-card-header">
+            <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+              <div class="admin-search"><input type="text" placeholder="搜索用户名/邮箱…" id="userSearch" oninput="renderUsers()"></div>
+              <select class="filter-select" id="userRoleFilter" onchange="renderUsers()">
+                <option value="all">所有状态</option>
+                <option value="admin">管理员</option>
+                <option value="none">非会员</option>
+                <option value="normal">普通会员</option>
+                <option value="manager">掌柜</option>
+                <option value="dealer">经销商</option>
+              </select>
+            </div>
+          </div>
+          <div class="batch-bar" id="userBatchBar">
+            <span class="batch-bar-info" id="userBatchBarInfo">已选择 0 项</span>
+            <div class="batch-bar-actions">
+              <select class="filter-select" id="userBatchMembershipSelect" style="background:#FFFFFF;">
+                <option value="">设为非会员</option>
+                <option value="normal">普通会员</option>
+                <option value="manager">掌柜</option>
+                <option value="dealer">经销商</option>
+              </select>
+              <button class="batch-btn batch-btn-on" onclick="batchSetUserMembership()">批量设置等级</button>
+              <button class="batch-btn batch-btn-del" onclick="batchDeleteUsers()">批量删除</button>
+              <button class="batch-btn batch-btn-cancel" onclick="clearUserSelection()">取消</button>
+            </div>
+          </div>
           <div class="orders-table-wrap users-table-only">
-            <table><thead><tr><th>用户名</th><th>邮箱</th><th>注册方式</th><th>注册时间</th><th>状态</th></tr></thead>
+            <table><thead><tr>
+              <th style="width:36px;"><input type="checkbox" id="userSelectAllCheckbox" onchange="toggleSelectAllUsers(this.checked)"></th>
+              <th class="sortable" data-sort="name" onclick="sortUsers('name')">用户名<span class="sort-arrow">↕</span></th>
+              <th class="sortable" data-sort="email" onclick="sortUsers('email')">邮箱<span class="sort-arrow">↕</span></th>
+              <th class="sortable" data-sort="provider" onclick="sortUsers('provider')">注册方式<span class="sort-arrow">↕</span></th>
+              <th class="sortable" data-sort="createdAt" onclick="sortUsers('createdAt')">注册时间<span class="sort-arrow">↕</span></th>
+              <th class="sortable" data-sort="status" onclick="sortUsers('status')">状态<span class="sort-arrow">↕</span></th>
+            </tr></thead>
             <tbody id="usersBody"></tbody></table>
+          </div>
+          <div class="select-all-row" id="userSelectAllRow">
+            <input type="checkbox" id="userSelectAllCheckboxMobile" onchange="toggleSelectAllUsers(this.checked)">
+            <span>全选</span>
           </div>
           <div class="user-cards" id="userCards"></div>
         </div>
@@ -503,7 +531,7 @@ if (entered !== ADMIN_PASSWORD) {
             <div class="admin-card-title">会员等级设置</div>
           </div>
           <div class="membership-admin-note">
-            ⚠️ 修改年费、折扣或消费门槛会立即影响全站所有会员的价格显示与升级条件。会员等级仅基于<strong>用户自己的付费/消费记录</strong>，与是否介绍其他客户无关。
+            ⚠️ 修改年费、折扣或消费门槛会立即影响全站所有会员的价格显示与升级条件。会员等级仅基于<strong>用户自己的付费/消费记录</strong>，与是否介绍其他客户无关。盲盒礼包仅可选择售价（普通会员价）低于该等级年费的商品。
           </div>
           <div class="tier-admin-grid" id="tierAdminGrid"></div>
         </div>
@@ -565,7 +593,7 @@ if (entered !== ADMIN_PASSWORD) {
             <input class="fm-input" id="fmPrice" type="number" placeholder="0.00" step="0.01" />
           </div>
           <div class="fm-group">
-            <label class="fm-label">原价（元，可选）</label>
+            <label class="fm-label">建议零售价（元，可选）</label>
             <input class="fm-input" id="fmOrigPrice" type="number" placeholder="0.00" step="0.01" />
           </div>
         </div>
@@ -598,7 +626,18 @@ if (entered !== ADMIN_PASSWORD) {
     </div>
   </div>
 
-  <script src="js/script.js"></script>
-  <script src="js/admin.js"></script>
+  <script src="js/script.js?v=202507011116"></script>
+  <script src="js/admin.js?v=202507011116"></script>
+
+  <!-- ===== SERVICE WORKER (2-day cache auto-expiry) ===== -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("/sw.js").catch(function(err) {
+          console.warn("SW registration failed:", err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
