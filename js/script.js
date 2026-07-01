@@ -11,6 +11,7 @@ let state = {
   editingProductId: null,
   productPage: 1,
   productsPerPage: 10,
+  pendingCheckout: false, // set when a guest clicks 去结算 — login first, then continue to checkout
 };
 
 const CATS = {
@@ -27,15 +28,17 @@ const CATS = {
 // option to pay the difference and upgrade (it does not auto-upgrade for
 // free, and it is never based on recruiting other members). Editable from
 // the admin portal (fee / discount / spend threshold / 盲盒 gift per tier).
-// mysteryBoxProductId points at a product in the catalog that's given as
-// the tier's annual 盲盒礼包 gift — admin can pick which product via the
-// 会员管理 panel. mysteryBoxValue is the advertised gift value shown to
-// members (defaults to matching the tier's annual fee, since that's what
-// was specified, but kept editable separately in case it should diverge).
+// mysteryBoxProductIds is an array of product ids in the catalog that are
+// given as the tier's annual 盲盒礼包 gift pool — admin can multi-select
+// from products whose 普通会员价 (price) is below the tier's annual fee,
+// via the 会员管理 panel. mysteryBoxValue is the advertised gift value
+// shown to members (defaults to matching the tier's annual fee, since
+// that's what was specified, but kept editable separately in case it
+// should diverge).
 const DEFAULT_MEMBERSHIP_TIERS = {
-  normal:    {key:'normal',   label:'普通会员', fee:199, discount:1,    spendThreshold:0,     order:0, mysteryBoxProductId:null, mysteryBoxValue:199},
-  manager:   {key:'manager',  label:'掌柜',     fee:399, discount:0.9,  spendThreshold:10000, order:1, mysteryBoxProductId:null, mysteryBoxValue:399},
-  dealer:    {key:'dealer',   label:'经销商',   fee:999, discount:0.8,  spendThreshold:50000, order:2, mysteryBoxProductId:null, mysteryBoxValue:999},
+  normal:    {key:'normal',   label:'普通会员', fee:199, discount:1,    spendThreshold:0,     order:0, mysteryBoxProductIds:[], mysteryBoxValue:199},
+  manager:   {key:'manager',  label:'掌柜',     fee:399, discount:0.9,  spendThreshold:10000, order:1, mysteryBoxProductIds:[], mysteryBoxValue:399},
+  dealer:    {key:'dealer',   label:'经销商',   fee:999, discount:0.8,  spendThreshold:50000, order:2, mysteryBoxProductIds:[], mysteryBoxValue:999},
 };
 
 function loadMembershipTiers(){
@@ -64,8 +67,15 @@ function loadMembershipTiers(){
       if(parsed[k] && parsed[k].mysteryBoxValue===undefined){
         parsed[k].mysteryBoxValue = DEFAULT_MEMBERSHIP_TIERS[k].mysteryBoxValue;
       }
-      if(parsed[k] && parsed[k].mysteryBoxProductId===undefined){
-        parsed[k].mysteryBoxProductId = DEFAULT_MEMBERSHIP_TIERS[k].mysteryBoxProductId;
+      // Migrate the old single mysteryBoxProductId field into the new
+      // multi-select mysteryBoxProductIds array (admin can now pick
+      // several gift products per tier instead of just one).
+      if(parsed[k] && parsed[k].mysteryBoxProductIds===undefined){
+        if(parsed[k].mysteryBoxProductId){
+          parsed[k].mysteryBoxProductIds = [parsed[k].mysteryBoxProductId];
+        } else {
+          parsed[k].mysteryBoxProductIds = [];
+        }
       }
     });
     localStorage.setItem('oneprime_membership_tiers', JSON.stringify(parsed));
@@ -127,14 +137,13 @@ function getEligibleTierBySpend(userId){
 }
 
 // ===== TIERED PRICE BREAKDOWN =====
-// Builds the full retail -> 普通会员参考价 -> 用户当前等级价 breakdown for
-// a single product, regardless of whether the user has actually paid for
-// any membership yet. This always shows what 普通会员 pricing WOULD be
-// (since that's tier order 0, always defined) as a reference point, then
-// — only if the user actually holds a paid tier above 普通会员 — the
-// further savings their actual tier gives on top of that reference price.
-// All discount amounts are computed against the original retail price,
-// per explicit instruction, not chained percentage-of-percentage.
+// Builds the full 建议零售价 -> 普通会员参考价 -> 用户当前等级价 breakdown
+// for a single product. 建议零售价 (p.origPrice) is purely an illustrative
+// reference number — it is NEVER the price anyone is actually charged.
+// Anyone who completes a purchase is, at minimum, charged the 普通会员价
+// (p.price) — that is the real floor price for the site, regardless of
+// whether the shopper has actually paid for a membership tier yet. A paid
+// tier above 普通会员 only ever discounts further from that floor.
 function getPriceBreakdown(retailPrice, user){
   var tiers = loadMembershipTiers();
   var ordered = getTierOrdered();
@@ -142,13 +151,10 @@ function getPriceBreakdown(retailPrice, user){
   var normalPrice = normalTier ? Math.round(retailPrice*normalTier.discount*100)/100 : retailPrice;
 
   var currentTier = (user && user.membership) ? tiers[user.membership] : null;
-  // IMPORTANT: a user with no paid membership at all must actually be
-  // charged full retail price — normalPrice is shown elsewhere purely as
-  // an illustration of "this is what 普通会员 pricing would look like",
-  // it is NOT a price anyone gets without having actually paid for that
-  // tier. Conflating the two would silently undercharge non-members
-  // whenever 普通会员's discount is ever changed away from 1 in admin.
-  var currentPrice = currentTier ? Math.round(retailPrice*currentTier.discount*100)/100 : retailPrice;
+  // Even a guest/non-member is always charged at least 普通会员价
+  // (normalPrice) — 建议零售价 is shown elsewhere purely as a reference
+  // "MSRP" line, never as something anyone actually pays.
+  var currentPrice = currentTier ? Math.round(retailPrice*currentTier.discount*100)/100 : normalPrice;
 
   // "Previous tier" for the savings-vs-previous-tier line: the tier one
   // order below the user's current tier (e.g. 经销商's previous is 掌柜,
@@ -164,9 +170,9 @@ function getPriceBreakdown(retailPrice, user){
   return {
     retailPrice: retailPrice,
     normalTier: normalTier,
-    normalPrice: normalPrice,       // reference/illustration only — see note above
+    normalPrice: normalPrice,       // the real floor price everyone pays at minimum
     currentTier: currentTier,       // null if user holds no paid membership at all
-    currentPrice: currentPrice,     // what the user is ACTUALLY charged — equals retailPrice if no paid membership
+    currentPrice: currentPrice,     // what the user is ACTUALLY charged — equals normalPrice if no paid membership above 普通会员
     previousTier: previousTier,
     previousPrice: previousPrice,
     savingsVsPrevious: savingsVsPrevious,
@@ -373,6 +379,17 @@ function loginUser(u,isAdmin,isNewRegistration){
   if(state.isAdmin){
     // Redirect to admin page
     window.location.href = 'admin.html';
+  } else if(state.pendingCheckout){
+    // The person was a guest trying to check out — now that they're
+    // logged in, send them straight to checkout instead of the
+    // membership page or shop home, so they don't lose their place.
+    state.pendingCheckout = false;
+    if(document.getElementById('page-checkout')){
+      renderCheckout();
+      showPage('checkout');
+    } else {
+      showShopScreen();
+    }
   } else if(isNewRegistration && !u.membership){
     // New sign-ups go straight to picking a membership tier (paid annual
     // tiers based purely on the member's own spend/payment — see
@@ -537,9 +554,10 @@ function renderProductGrid(container,prods){
   container.innerHTML=prods.map(function(p){
     const qty=getCartQty(p.id);
     const pb=getPriceBreakdown(p.price,state.currentUser);
-    // Card view stays simple: retail price + the price the user actually
-    // pays right now. Full breakdown (普通会员参考价 + 比上一档又省多少)
-    // lives in the product modal to avoid crowding this card.
+    // Card view stays simple: 建议零售价 + the price the user actually
+    // pays right now (at minimum the 普通会员价 floor). Full breakdown
+    // (普通会员参考价 + 比上一档又省多少) lives in the product modal to
+    // avoid crowding this card.
     const priceHtml = pb.currentPrice<pb.retailPrice
       ? '<span class="prod-price">¥'+pb.currentPrice+'</span><span class="prod-price-orig">¥'+pb.retailPrice+'</span>'+(pb.currentTier?'<span class="member-price-tag">'+pb.currentTier.label+'价</span>':'')
       : '<span class="prod-price">¥'+pb.retailPrice+'</span>'+(p.origPrice ? '<span class="prod-price-orig">¥'+p.origPrice+'</span>' : '');
@@ -553,7 +571,7 @@ function renderProductGrid(container,prods){
           '<div>'+priceHtml+'</div>'+
           '<div class="prod-qty-ctrl" onclick="event.stopPropagation()">'+
             '<button onclick="cardDecrement('+p.id+')">−</button>'+
-            '<div class="prod-qty-num" id="card-qty-'+p.id+'">'+(qty||0)+'</div>'+
+            '<input class="prod-qty-num" id="card-qty-'+p.id+'" type="number" min="0" step="1" value="'+(qty||0)+'" onclick="event.stopPropagation()" onchange="setCardQty('+p.id+',this.value)">'+
             '<button onclick="cardIncrement('+p.id+')">+</button>'+
           '</div>'+
         '</div>'+
@@ -569,7 +587,7 @@ function getCartQty(id){
 
 function cardIncrement(id){
   addToCart(id,true);
-  document.querySelectorAll('#card-qty-'+id).forEach(function(el){el.textContent=getCartQty(id);});
+  document.querySelectorAll('#card-qty-'+id).forEach(function(el){el.value=getCartQty(id);});
 }
 
 function cardDecrement(id){
@@ -577,47 +595,76 @@ function cardDecrement(id){
   if(!item)return;
   if(item.qty<=1)removeFromCart(id);
   else{item.qty--;updateCart();}
-  document.querySelectorAll('#card-qty-'+id).forEach(function(el){el.textContent=getCartQty(id);});
+  document.querySelectorAll('#card-qty-'+id).forEach(function(el){el.value=getCartQty(id);});
+}
+
+// Lets shoppers type an exact quantity directly into the product-card
+// stepper (e.g. jump straight from 1 to 19) instead of only being able to
+// click +/- one at a time.
+function setCardQty(id,val){
+  var n=parseInt(val,10);
+  if(isNaN(n)||n<0)n=0;
+  if(n===0){
+    removeFromCart(id);
+    document.querySelectorAll('#card-qty-'+id).forEach(function(el){el.value=0;});
+    return;
+  }
+  const p=state.products.find(function(x){return x.id===id;});
+  if(!p)return;
+  const pb=getPriceBreakdown(p.price,state.currentUser);
+  const existing=state.cart.find(function(x){return x.id===id;});
+  if(existing){
+    existing.qty=n;
+  } else {
+    state.cart.push({id:id,name:p.name,price:pb.currentPrice,origPrice:p.origPrice||p.price,img:p.img,cat:p.cat,qty:n});
+  }
+  updateCart();
+  document.querySelectorAll('#card-qty-'+id).forEach(function(el){el.value=n;});
 }
 
 // ===== PRODUCT MODAL =====
 let modalQty=1;
+let modalProductId=null;
 
 function openProduct(id){
   const p=state.products.find(function(x){return x.id===id;});if(!p)return;
+  modalProductId=id;
   modalQty=1;
   const pb=getPriceBreakdown(p.price,state.currentUser);
 
-  // Build the price breakdown block. Always show 原价 (struck through if
-  // any discount applies anywhere) and the 普通会员参考价 as a reference
-  // point — even for users who haven't paid for any membership yet, so
-  // they can see what joining would get them. Only when the user actually
-  // holds a paid tier above 普通会员 do we add a further "当前等级价" line
-  // plus how much more that saves versus the previous tier.
+  // Build the price breakdown block. Always show 建议零售价 (struck
+  // through, illustrative MSRP only) and the 普通会员参考价/实付价 as the
+  // real floor — even for users who haven't paid for any membership yet,
+  // so they can see what joining would get them. Only when the user
+  // actually holds a paid tier above 普通会员 do we add a further "当前
+  // 等级价" line plus exactly how much that saves versus the previous
+  // tier AND versus 建议零售价.
   let priceBreakdownHtml = '';
   if(pb.hasPaidTierAboveNormal){
+    var savingsVsRetail = p.origPrice ? Math.round((p.origPrice-pb.currentPrice)*100)/100 : null;
     priceBreakdownHtml =
       '<div class="modal-price-row">'+
         '<span class="modal-price">¥'+pb.currentPrice+'</span>'+
-        '<span class="modal-orig">¥'+pb.retailPrice+'</span>'+
+        (p.origPrice ? '<span class="modal-orig">¥'+p.origPrice+'</span>' : '')+
         '<span class="badge badge-gold">'+pb.currentTier.label+'专享价</span>'+
       '</div>'+
       '<div class="price-tier-breakdown">'+
-        '<div class="ptb-row"><span class="ptb-label">原价</span><span class="ptb-value ptb-strike">¥'+pb.retailPrice+'</span></div>'+
+        (p.origPrice ? '<div class="ptb-row"><span class="ptb-label">建议零售价</span><span class="ptb-value ptb-strike">¥'+p.origPrice+'</span></div>' : '')+
         '<div class="ptb-row"><span class="ptb-label">普通会员参考价</span><span class="ptb-value">¥'+pb.normalPrice+'</span></div>'+
         '<div class="ptb-row ptb-current"><span class="ptb-label">'+pb.currentTier.label+'价（您当前等级）</span><span class="ptb-value">¥'+pb.currentPrice+'</span></div>'+
         (pb.savingsVsPrevious>0.001 ? '<div class="ptb-savings">🎉 比'+pb.previousTier.label+'又省 ¥'+pb.savingsVsPrevious.toFixed(2)+'</div>' : '')+
+        (savingsVsRetail!==null && savingsVsRetail>0.001 ? '<div class="ptb-savings">💰 比建议零售价省 ¥'+savingsVsRetail.toFixed(2)+'</div>' : '')+
       '</div>';
   } else {
-    // User holds no paid membership (or only browsing as a guest) — show
-    // retail price plus the 普通会员 reference price as an upsell.
+    // User holds no paid membership above 普通会员 (or is only browsing
+    // as a guest) — they're still charged 普通会员价 (pb.currentPrice) at
+    // minimum, with 建议零售价 shown only as a struck-through reference.
     priceBreakdownHtml =
       '<div class="modal-price-row">'+
-        '<span class="modal-price">¥'+pb.retailPrice+'</span>'+
+        '<span class="modal-price">¥'+pb.currentPrice+'</span>'+
         (p.origPrice ? '<span class="modal-orig">¥'+p.origPrice+'</span>' : '')+
-        (p.origPrice ? '<span class="badge badge-gold">省¥'+(p.origPrice-p.price)+'</span>' : '')+
-      '</div>'+
-      (pb.normalPrice<pb.retailPrice ? '<div class="price-tier-breakdown"><div class="ptb-row"><span class="ptb-label">普通会员参考价</span><span class="ptb-value">¥'+pb.normalPrice+'</span></div></div>' : '');
+        (p.origPrice ? '<span class="badge badge-gold">省¥'+(p.origPrice-pb.currentPrice).toFixed(2).replace(/\.00$/,'')+'</span>' : '')+
+      '</div>';
   }
 
   document.getElementById('modalContent').innerHTML=
@@ -630,7 +677,7 @@ function openProduct(id){
       '<div class="qty-row">'+
         '<div class="qty-ctrl">'+
           '<button onclick="changeModalQty(-1)">−</button>'+
-          '<span id="modalQtyDisplay">1</span>'+
+          '<input id="modalQtyDisplay" type="number" min="1" step="1" value="1" onchange="setModalQty(this.value)">'+
           '<button onclick="changeModalQty(1)">+</button>'+
         '</div>'+
         '<button class="modal-add-btn" onclick="addToCartFromModal('+p.id+')">加入购物车</button>'+
@@ -645,11 +692,25 @@ function openProduct(id){
 
 function changeModalQty(d){
   modalQty=Math.max(1,modalQty+d);
-  document.getElementById('modalQtyDisplay').textContent=modalQty;
+  document.getElementById('modalQtyDisplay').value=modalQty;
+}
+
+// Lets shoppers type an exact quantity into the product modal's stepper
+// directly (e.g. straight from 1 to 19) instead of only +/- one at a time.
+function setModalQty(val){
+  var n=parseInt(val,10);
+  if(isNaN(n)||n<1)n=1;
+  modalQty=n;
+  document.getElementById('modalQtyDisplay').value=n;
 }
 
 function addToCartFromModal(id){
-  for(var i=0;i<modalQty;i++)addToCart(id,true);
+  const p=state.products.find(function(x){return x.id===id;});if(!p)return;
+  const pb=getPriceBreakdown(p.price,state.currentUser);
+  const existing=state.cart.find(function(x){return x.id===id;});
+  if(existing) existing.qty+=modalQty;
+  else state.cart.push({id:id,name:p.name,price:pb.currentPrice,origPrice:p.origPrice||p.price,img:p.img,cat:p.cat,qty:modalQty});
+  updateCart();
   toast('已加入购物车 ×'+modalQty);
   closeProdModalDirect();
 }
@@ -662,12 +723,15 @@ function closeProdModalDirect(){
 }
 
 // ===== CART =====
+// origPrice on a cart line is the product's 建议零售价 (p.origPrice) when
+// set, falling back to p.price otherwise — this is what per-item and
+// total savings are measured against (see updateCart()).
 function addToCart(id,silent){
   const p=state.products.find(function(x){return x.id===id;});if(!p)return;
   const pb=getPriceBreakdown(p.price,state.currentUser);
   const existing=state.cart.find(function(x){return x.id===id;});
   if(existing)existing.qty++;
-  else state.cart.push({id:id,name:p.name,price:pb.currentPrice,origPrice:p.price,img:p.img,cat:p.cat,qty:1});
+  else state.cart.push({id:id,name:p.name,price:pb.currentPrice,origPrice:p.origPrice||p.price,img:p.img,cat:p.cat,qty:1});
   updateCart();
   if(!silent)toast('✓ 已加入购物车');
 }
@@ -685,6 +749,17 @@ function changeCartQty(id,d){
   updateCart();
 }
 
+// Lets shoppers type an exact quantity directly into a cart line item
+// (e.g. straight from 1 to 19) instead of only +/- one click at a time.
+function setCartQtyExact(id,val){
+  var n=parseInt(val,10);
+  if(isNaN(n)||n<1){removeFromCart(id);return;}
+  const item=state.cart.find(function(x){return x.id===id;});
+  if(!item)return;
+  item.qty=n;
+  updateCart();
+}
+
 function updateCart(){
   const total=state.cart.reduce(function(s,i){return s+i.price*i.qty;},0);
   const origTotal=state.cart.reduce(function(s,i){return s+(i.origPrice||i.price)*i.qty;},0);
@@ -699,15 +774,16 @@ function updateCart(){
     footEl.innerHTML='';return;
   }
   itemsEl.innerHTML=state.cart.map(function(i){
+    var lineSavings = ((i.origPrice||i.price)-i.price)*i.qty;
     return '<div class="cart-item">'+
       (i.img ? '<img class="cart-item-img" src="'+i.img+'" alt="'+i.name+'">' : '<div class="cart-item-img-ph">'+(CATS[i.cat]?CATS[i.cat].icon:'📦')+'</div>')+
       '<div class="cart-item-info">'+
         '<div class="cart-item-name">'+i.name+'</div>'+
-        '<div class="cart-item-price">¥'+i.price+(i.origPrice&&i.origPrice>i.price?' <span class="ci-orig">¥'+i.origPrice+'</span>':'')+'</div>'+
+        '<div class="cart-item-price">¥'+i.price+(i.origPrice&&i.origPrice>i.price?' <span class="ci-orig">¥'+i.origPrice+'</span>':'')+(lineSavings>0.001?' <span class="ci-savings">省¥'+lineSavings.toFixed(2)+'</span>':'')+'</div>'+
         '<div class="cart-item-controls">'+
           '<div class="ci-qty">'+
             '<button onclick="changeCartQty('+i.id+',-1)">−</button>'+
-            '<span>'+i.qty+'</span>'+
+            '<input type="number" min="1" step="1" value="'+i.qty+'" onchange="setCartQtyExact('+i.id+',this.value)">'+
             '<button onclick="changeCartQty('+i.id+',1)">+</button>'+
           '</div>'+
           '<button class="ci-remove" onclick="removeFromCart('+i.id+')">删除</button>'+
@@ -717,9 +793,8 @@ function updateCart(){
   }).join('');
   const savings = origTotal-total;
   footEl.innerHTML=
-    (savings>0.001 ? '<div class="cart-savings-row">🎉 '+getUserMembershipLabel(state.currentUser)+'折扣已为您节省 ¥'+savings.toFixed(2)+'</div>' : '')+
     renderNextTierHint()+
-    '<div class="cart-total-row"><span class="cart-total-label">合计 ('+count+'件)</span><span class="cart-total-price">¥'+total.toFixed(2)+'</span></div>'+
+    '<div class="cart-total-row"><span class="cart-total-label">合计 ('+count+'件)</span><span class="cart-total-price">¥'+total.toFixed(2)+(savings>0.001?' <span class="cart-total-savings">共省¥'+savings.toFixed(2)+'</span>':'')+'</span></div>'+
     '<button class="checkout-btn" onclick="goCheckout()">去结算</button>';
 }
 
@@ -740,7 +815,20 @@ function toggleCart(){
   document.getElementById('cartOverlay').classList.toggle('open');
 }
 
+// Checkout now requires being logged in first — a guest who clicks 去结算
+// is sent straight to the login modal, and is automatically carried
+// through to the checkout page the moment they log in or register (see
+// the pendingCheckout handling inside loginUser()). This also matches the
+// pricing rule that any actual purchase is made at minimum at 普通会员价,
+// which requires an account.
 function goCheckout(){
+  if(!state.currentUser){
+    toggleCart();
+    state.pendingCheckout = true;
+    toast('请先登录后再结算');
+    openAuthModal();
+    return;
+  }
   toggleCart();
   renderCheckout();
   showPage('checkout');
@@ -753,13 +841,14 @@ function renderCheckout(){
   const total=state.cart.reduce(function(s,i){return s+i.price*i.qty;},0);
   const origTotal=state.cart.reduce(function(s,i){return s+(i.origPrice||i.price)*i.qty;},0);
   ckItems.innerHTML=state.cart.map(function(i){
-    return '<div class="os-item"><span class="os-item-name">'+i.name+' ×'+i.qty+'</span><span class="os-item-price">¥'+(i.price*i.qty).toFixed(2)+'</span></div>';
+    var lineSavings = ((i.origPrice||i.price)-i.price)*i.qty;
+    return '<div class="os-item"><span class="os-item-name">'+i.name+' ×'+i.qty+(lineSavings>0.001?' <span class="ci-savings">省¥'+lineSavings.toFixed(2)+'</span>':'')+'</span><span class="os-item-price">¥'+(i.price*i.qty).toFixed(2)+'</span></div>';
   }).join('');
   const savings = origTotal-total;
   if(savings>0.001){
     ckItems.innerHTML += '<div class="os-item os-savings"><span class="os-item-name">'+getUserMembershipLabel(state.currentUser)+'折扣优惠</span><span class="os-item-price">−¥'+savings.toFixed(2)+'</span></div>';
   }
-  ckTotal.textContent='¥'+total.toFixed(2);
+  ckTotal.innerHTML='¥'+total.toFixed(2)+(savings>0.001?' <span class="cart-total-savings">共省¥'+savings.toFixed(2)+'</span>':'');
   const ckHintEl=document.getElementById('ckNextTierHint');
   if(ckHintEl)ckHintEl.innerHTML=renderNextTierHint();
   const u=state.currentUser;
@@ -770,6 +859,12 @@ function renderCheckout(){
 }
 
 function placeOrder(){
+  if(!state.currentUser){
+    state.pendingCheckout = true;
+    toast('请先登录后再下单');
+    openAuthModal();
+    return;
+  }
   const name=document.getElementById('ck-name').value.trim();
   const phone=document.getElementById('ck-phone').value.trim();
   const city=document.getElementById('ck-city').value.trim();
@@ -886,4 +981,5 @@ if(document.getElementById('homeProductGrid')){
   renderHomePage();
   updateCategoryCounts();
 }
+if(document.getElementById('cartItems'))updateCart();
 if(typeof refreshMembershipPage==='function')refreshMembershipPage();

@@ -88,14 +88,21 @@ function renderTierGrid(){
       }
     }
 
+    // Multi-select mystery box: show the names of all selected products
+    // (or a generic "价值¥X" if none have been configured yet).
     var mysteryBoxText = '年度盲盒礼包（价值 ¥'+t.mysteryBoxValue+'）';
-    if(t.mysteryBoxProductId){
-      var boxProduct = state.products.find(function(p){return p.id===t.mysteryBoxProductId;});
-      if(boxProduct) mysteryBoxText = '年度盲盒礼包：<strong>'+boxProduct.name+'</strong>（价值 ¥'+t.mysteryBoxValue+'）';
+    var boxIds = t.mysteryBoxProductIds || [];
+    if(boxIds.length > 0){
+      var boxProds = boxIds.map(function(pid){
+        return state.products.find(function(p){return p.id===pid;});
+      }).filter(Boolean);
+      if(boxProds.length){
+        mysteryBoxText = '年度盲盒礼包：<strong>'+boxProds.map(function(p){return p.name;}).join('、')+'</strong>（价值 ¥'+t.mysteryBoxValue+'）';
+      }
     }
 
     var perks = [
-      t.discount>=1 ? '原价购买全场商品（不含折扣）' : '全场商品享 <strong>'+Math.round((1-t.discount)*100)+'%</strong> 折扣',
+      t.discount>=1 ? '普通会员价购买全场商品' : '全场商品享 <strong>'+Math.round((1-t.discount)*100)+'%</strong> 折扣（在普通会员价基础上）',
       '🎁 '+mysteryBoxText,
       t.spendThreshold>0 ? '累计消费满 ¥'+t.spendThreshold.toLocaleString()+' 可补差价升级至此等级' : '入门等级，随时可开通',
       '会员折扣登录后自动应用于商品价格与结算'
