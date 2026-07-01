@@ -291,10 +291,10 @@ function generateDemoRevenueOrders(now){
   return demo;
 }
 
-function loadData(){
-  state.products=JSON.parse(localStorage.getItem('oneprime_products')||'[]');
-  state.users=JSON.parse(localStorage.getItem('oneprime_users')||'[]');
-  state.orders=JSON.parse(localStorage.getItem('oneprime_orders')||'[]');
+async function loadData() {
+  state.products = await dbGetProducts();
+  state.orders  = await dbGetOrders();
+  state.users   = await dbGetUsers();
 }
 
 // ===== SESSION PERSISTENCE =====
@@ -883,8 +883,8 @@ function placeOrder(){
     phone:phone,
     createdAt:new Date().toISOString(),
   };
-  state.orders.unshift(order);
-  saveOrders();
+  await dbSaveOrder(order);
+  await loadData();
   state.cart=[];
   updateCart();
   toast('🎉 订单提交成功！我们将尽快处理您的订单');
