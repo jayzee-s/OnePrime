@@ -853,21 +853,23 @@ function toggleActive() {
   document.getElementById('fmActiveLabel').textContent = fmActive ? '已上架' : '已下架';
 }
 
-function handleImgUpload(e) {
+async function handleImgUpload(e) {
   var file = e.target.files[0];
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) {
     toast('图片不能超过5MB');
     return;
   }
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var data = ev.target.result;
-    document.getElementById('fmImgData').value = data;
-    document.getElementById('imgPreview').src = data;
+  toast('上传中…');
+  try {
+    var url = await dbUploadImage(file);
+    document.getElementById('fmImgData').value = url;
+    document.getElementById('imgPreview').src = url;
     document.getElementById('imgPreview').classList.remove('hidden');
-  };
-  reader.readAsDataURL(file);
+    toast('图片上传成功 ✓');
+  } catch(err) {
+    toast('上传失败：' + err.message);
+  }
 }
 
 function saveProduct() {
