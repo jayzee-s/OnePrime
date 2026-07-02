@@ -79,8 +79,8 @@ function goToCategoryProducts(catKey) {
 }
 
 // ===== DASHBOARD =====
-function refreshAdminDashboard() {
-  loadData();
+async function refreshAdminDashboard() {
+  await loadData();
   document.getElementById('statProducts').textContent = state.products.length;
   var activeCount = state.products.filter(function(p) { return p.active; }).length;
   document.getElementById('statProductsChange').textContent = '↑ ' + activeCount + ' 款已上架';
@@ -124,8 +124,8 @@ function refreshAdminDashboard() {
 }
 
 // ===== PRODUCT MANAGEMENT =====
-function renderAdminProducts() {
-  loadData();
+async function renderAdminProducts() {
+  await loadData();
   var search = document.getElementById('prodSearch') ? document.getElementById('prodSearch').value.toLowerCase() : '';
   var cat = document.getElementById('prodCatFilter') ? document.getElementById('prodCatFilter').value : 'all';
   var prods = state.products.filter(function(p) {
@@ -263,27 +263,25 @@ function updateBatchBar() {
   }
 }
 
-function batchSetActive(active) {
+async function batchSetActive(active) {
   if (!selectedProductIds.length) return;
-  state.products.forEach(function(p) {
-    if (selectedProductIds.indexOf(p.id) !== -1) p.active = active;
-  });
-  saveProducts();
-  toast(active ? '已批量上架 ' + selectedProductIds.length + ' 件商品' : '已批量下架 ' + selectedProductIds.length + ' 件商品');
+  try {
+    await dbSetProductsActive(selectedProductIds, active);
+    toast(active ? '已批量上架 ' + selectedProductIds.length + ' 件商品' : '已批量下架 ' + selectedProductIds.length + ' 件商品');
+  } catch(e) { toast('操作失败：' + e.message); return; }
   selectedProductIds = [];
-  renderAdminProducts();
+  await renderAdminProducts();
 }
 
-function batchDelete() {
+async function batchDelete() {
   if (!selectedProductIds.length) return;
   if (!confirm('确定要删除选中的 ' + selectedProductIds.length + ' 件商品吗？')) return;
-  state.products = state.products.filter(function(p) {
-    return selectedProductIds.indexOf(p.id) === -1;
-  });
-  saveProducts();
-  toast('已批量删除商品');
+  try {
+    await dbDeleteProducts(selectedProductIds);
+    toast('已批量删除商品');
+  } catch(e) { toast('删除失败：' + e.message); return; }
   selectedProductIds = [];
-  renderAdminProducts();
+  await renderAdminProducts();
 }
 
 function goPage(n) {
@@ -293,7 +291,8 @@ function goPage(n) {
 }
 
 // ===== ORDERS =====
-function renderOrders() {
+async function renderOrders() {
+  await loadData();
   // Demo/sample orders exist only to populate the 收入趋势 chart with a
   // believable 2-year trend — they must never appear in the actual order
   // management list, since an admin could otherwise try to "process" or
@@ -413,47 +412,43 @@ function updateOrderBatchBar() {
   }
 }
 
-function batchSetOrderStatus() {
+async function batchSetOrderStatus() {
   if (!selectedOrderIds.length) return;
   var statusSelect = document.getElementById('orderBatchStatusSelect');
   var status = statusSelect ? statusSelect.value : 'processing';
-  state.orders.forEach(function(o) {
-    if (selectedOrderIds.indexOf(o.id) !== -1) o.status = status;
-  });
-  saveOrders();
-  toast('已批量更新 ' + selectedOrderIds.length + ' 个订单状态为「' + statusLabel(status) + '」');
+  try {
+    await dbUpdateOrdersStatus(selectedOrderIds, status);
+    toast('已批量更新 ' + selectedOrderIds.length + ' 个订单状态为「' + statusLabel(status) + '」');
+  } catch(e) { toast('批量更新失败：' + e.message); return; }
   selectedOrderIds = [];
-  renderOrders();
+  await renderOrders();
   if (document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')) {
-    refreshAdminDashboard();
+    await refreshAdminDashboard();
   }
 }
 
-function batchDeleteOrders() {
+async function batchDeleteOrders() {
   if (!selectedOrderIds.length) return;
   if (!confirm('确定要删除选中的 ' + selectedOrderIds.length + ' 个订单吗？此操作无法撤销。')) return;
-  state.orders = state.orders.filter(function(o) {
-    return selectedOrderIds.indexOf(o.id) === -1;
-  });
-  saveOrders();
-  toast('已批量删除订单');
+  try {
+    await dbDeleteOrders(selectedOrderIds);
+    toast('已批量删除订单');
+  } catch(e) { toast('删除失败：' + e.message); return; }
   selectedOrderIds = [];
-  renderOrders();
+  await renderOrders();
   if (document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')) {
-    refreshAdminDashboard();
+    await refreshAdminDashboard();
   }
 }
 
-function updateOrderStatus(id, status) {
-  var o = state.orders.find(function(x) { return x.id === id; });
-  if (o) {
-    o.status = status;
-    saveOrders();
+async function updateOrderStatus(id, status) {
+  try {
+    await dbUpdateOrderStatus(id, status);
     toast('订单状态已更新');
-    renderOrders();
-    if (document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')) {
-      refreshAdminDashboard();
-    }
+  } catch(e) { toast('更新失败：' + e.message); return; }
+  await renderOrders();
+  if (document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')) {
+    await refreshAdminDashboard();
   }
 }
 
@@ -488,7 +483,8 @@ function getMembershipLabelForUser(u) {
   return t ? t.label : '非会员';
 }
 
-function renderUsers() {
+async function renderUsers() {
+  await loadData();
   var search = document.getElementById('userSearch') ? document.getElementById('userSearch').value.toLowerCase().trim() : '';
   var roleFilter = document.getElementById('userRoleFilter') ? document.getElementById('userRoleFilter').value : 'all';
 
@@ -633,43 +629,45 @@ function updateUserBatchBar() {
 // Batch membership changes and deletes both skip admin accounts even if
 // one happens to be checked — an admin's role/account shouldn't be
 // silently changed or removed via a bulk action meant for customers.
-function batchSetUserMembership() {
+async function batchSetUserMembership() {
   if (!selectedUserIds.length) return;
   var select = document.getElementById('userBatchMembershipSelect');
   var membershipKey = select ? (select.value || null) : null;
-  var skippedAdmins = 0;
-  var updated = 0;
-  state.users.forEach(function(u) {
-    if (selectedUserIds.indexOf(u.id) === -1) return;
-    if (u.role === 'admin') { skippedAdmins++; return; }
-    u.membership = membershipKey;
-    updated++;
+  var usersToUpdate = state.users.filter(function(u) {
+    return selectedUserIds.indexOf(u.id) !== -1 && u.role !== 'admin';
   });
-  saveUsers();
+  var skippedAdmins = selectedUserIds.length - usersToUpdate.length;
+  try {
+    await Promise.all(usersToUpdate.map(function(u) {
+      return dbSaveUser(Object.assign({}, u, { membership: membershipKey || null }));
+    }));
+  } catch(e) { toast('操作失败：' + e.message); return; }
   var label = membershipKey ? (loadMembershipTiers()[membershipKey] ? loadMembershipTiers()[membershipKey].label : membershipKey) : '非会员';
-  toast('已批量将 ' + updated + ' 位用户设为「' + label + '」' + (skippedAdmins ? '（已跳过 ' + skippedAdmins + ' 位管理员）' : ''));
+  toast('已批量将 ' + usersToUpdate.length + ' 位用户设为「' + label + '」' + (skippedAdmins ? '（已跳过 ' + skippedAdmins + ' 位管理员）' : ''));
   selectedUserIds = [];
-  renderUsers();
+  await renderUsers();
   if (document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')) {
-    refreshAdminDashboard();
+    await refreshAdminDashboard();
   }
 }
 
-function batchDeleteUsers() {
+async function batchDeleteUsers() {
   if (!selectedUserIds.length) return;
-  var adminCount = state.users.filter(function(u) { return selectedUserIds.indexOf(u.id) !== -1 && u.role === 'admin'; }).length;
-  var deletableCount = selectedUserIds.length - adminCount;
-  if (!deletableCount) { toast('管理员账户不能通过批量操作删除'); return; }
-  if (!confirm('确定要删除选中的 ' + deletableCount + ' 位用户吗？' + (adminCount ? '（管理员账户将被跳过）' : '') + '此操作无法撤销。')) return;
-  state.users = state.users.filter(function(u) {
-    return !(selectedUserIds.indexOf(u.id) !== -1 && u.role !== 'admin');
+  var idsToDelete = selectedUserIds.filter(function(id) {
+    var u = state.users.find(function(u) { return u.id === id; });
+    return u && u.role !== 'admin';
   });
-  saveUsers();
-  toast('已批量删除用户');
+  var skippedAdmins = selectedUserIds.length - idsToDelete.length;
+  if (!idsToDelete.length) { toast('管理员账户不能通过批量操作删除'); return; }
+  if (!confirm('确定要删除选中的 ' + idsToDelete.length + ' 位用户吗？' + (skippedAdmins ? '（管理员账户将被跳过）' : '') + '此操作无法撤销。')) return;
+  try {
+    await dbDeleteUsers(idsToDelete);
+    toast('已批量删除用户');
+  } catch(e) { toast('删除失败：' + e.message); return; }
   selectedUserIds = [];
-  renderUsers();
+  await renderUsers();
   if (document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')) {
-    refreshAdminDashboard();
+    await refreshAdminDashboard();
   }
 }
 
@@ -872,7 +870,7 @@ async function handleImgUpload(e) {
   }
 }
 
-function saveProduct() {
+async function saveProduct() {
   var name = document.getElementById('fmName').value.trim();
   var price = parseFloat(document.getElementById('fmPrice').value);
   var desc = document.getElementById('fmDesc').value.trim();
@@ -895,24 +893,21 @@ function saveProduct() {
     img: document.getElementById('fmImgData').value || '',
     active: fmActive
   };
-  if (id) {
-    var idx = state.products.findIndex(function(x) { return x.id === prod.id; });
-    if (idx > -1) state.products[idx] = prod;
-  } else {
-    state.products.unshift(prod);
-  }
-  saveProducts();
-  renderAdminProducts();
+  try {
+    await dbSaveProduct(prod);
+    toast(id ? '商品已更新 ✓' : '商品已添加 ✓');
+  } catch(e) { toast('保存失败：' + e.message); return; }
   closeProductForm();
-  toast(id ? '商品已更新 ✓' : '商品已添加 ✓');
+  await renderAdminProducts();
 }
 
-function deleteProduct(id) {
+async function deleteProduct(id) {
   if (!confirm('确定要删除该商品吗？')) return;
-  state.products = state.products.filter(function(x) { return x.id !== id; });
-  saveProducts();
-  renderAdminProducts();
-  toast('商品已删除');
+  try {
+    await dbDeleteProduct(id);
+    toast('商品已删除');
+  } catch(e) { toast('删除失败：' + e.message); return; }
+  await renderAdminProducts();
 }
 
 // ===== MEMBERSHIP MANAGEMENT =====
@@ -1045,12 +1040,9 @@ function logout() {
 }
 
 // ===== INIT =====
-loadData();
-// Set default state
-window.state = window.state || {};
-state.productPage = state.productPage || 1;
-state.revenueRange = state.revenueRange || 'day';
-refreshAdminDashboard();
-renderAdminProducts();
-renderOrders();
-renderUsers();
+(async function(){
+  state.productPage = state.productPage || 1;
+  await loadData();
+  await refreshAdminDashboard();
+  // Other panels load fresh data when navigated to via showAdminPanel()
+})();
