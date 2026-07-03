@@ -117,9 +117,9 @@ function getUserMembershipLabel(user){
 // dashboard's revenue figures.
 function getUserCumulativeSpend(userId){
   if(!userId) return 0;
-  // state.orders is already loaded from Supabase — no localStorage read needed.
-  return (state.orders||[])
-    .filter(function(o){return String(o.userId)===String(userId) && !o.isDemo;})
+  var orders = JSON.parse(localStorage.getItem('oneprime_orders')||'[]');
+  return orders
+    .filter(function(o){return o.userId===userId && !o.isDemo;})
     .reduce(function(s,o){return s+o.total;},0);
 }
 
@@ -198,18 +198,52 @@ function getAmountToNextTier(user){
   return {tier: next, remaining: Math.round(remaining*100)/100, spend: spend};
 }
 
-// ===== DATA INIT =====
-// Products, orders, and users live in Supabase.
-// Use the Supabase Table Editor or the admin portal to add real data.
-// On first load, if the products table is empty we seed demo products
-// automatically so the storefront isn't blank.
-async function initData(){
-  loadMembershipTiers(); // seeds localStorage defaults if not present
-  await loadData();
-  if(state.products.length === 0){
-    await seedDemoProductsIfEmpty();
-    await loadData();
+// ===== SAMPLE DATA =====
+function initData(){
+  if(!localStorage.getItem('oneprime_products')){
+    const prods=[
+      {id:1,name:'慕易庄园赤霞珠干红2021',nameEn:'Moui Estate Cabernet Sauvignon 2021',cat:'wine',price:298,origPrice:398,desc:'澳大利亚南澳地区精选赤霞珠葡萄，单宁丰厚，黑浆果与雪松香气交织，陈年12个月于法国橡木桶，适合搭配红肉料理。',stock:120,active:true,img:''},
+      {id:2,name:'慕易庄园西拉礼盒装',nameEn:'Moui Estate Shiraz Gift Box',cat:'wine',price:688,origPrice:888,desc:'双瓶礼盒装，精选2019年份西拉，深紫色泽，黑胡椒与紫罗兰香气层次丰富，余味悠长，馈赠佳品。',stock:48,active:true,img:''},
+      {id:3,name:'慕易庄园霞多丽干白',nameEn:'Moui Estate Chardonnay',cat:'wine',price:198,origPrice:258,desc:'清爽干白，绿苹果与柑橘香气，口感清新，略带矿物质风味，适合搭配海鲜及轻食料理。',stock:80,active:true,img:''},
+      {id:13,name:'慕易庄园黑皮诺2020',nameEn:'Moui Estate Pinot Noir 2020',cat:'wine',price:328,origPrice:428,desc:'精选维多利亚州凉爽产区黑皮诺，红色樱桃与玫瑰花香，单宁柔顺，余味带一丝烟熏橡木气息。',stock:65,active:true,img:''},
+      {id:14,name:'慕易庄园起泡酒礼盒',nameEn:'Moui Estate Sparkling Gift Box',cat:'wine',price:228,origPrice:298,desc:'传统法式工艺酿造起泡酒，气泡细腻持久，柑橘与白桃香气，适合庆典及节日聚餐场合。',stock:90,active:true,img:''},
+      {id:15,name:'慕易庄园麝香甜白2022',nameEn:'Moui Estate Moscato 2022',cat:'wine',price:168,origPrice:218,desc:'低酒精度甜白葡萄酒，荔枝与白花香气浓郁，口感甜润清爽，适合搭配甜点或单独饮用。',stock:100,active:true,img:''},
+      {id:4,name:'Swisse 护肝片 120粒',nameEn:'Swisse Liver Detox 120 Tabs',cat:'health',price:188,origPrice:248,desc:'澳洲Swisse明星产品，含水飞蓟素+朝鲜蓟提取物，帮助肝脏排毒修复，适合经常饮酒及熬夜人群。',stock:200,active:true,img:''},
+      {id:5,name:'Blackmores 鱼油胶囊 400粒',nameEn:'Blackmores Omega-3 Fish Oil 400',cat:'health',price:298,origPrice:368,desc:'深海鱼油，富含EPA和DHA，支持心脑血管健康，改善关节灵活性，澳洲药房销量第一品牌。',stock:150,active:true,img:''},
+      {id:6,name:'Swisse 胶原蛋白液 500ml',nameEn:'Swisse Beauty Collagen Liquid',cat:'health',price:228,origPrice:298,desc:'口服胶原蛋白，含10,000mg水解胶原蛋白+维生素C，助力肌肤弹性与光泽，草莓口味，口感宜人。',stock:90,active:true,img:''},
+      {id:16,name:'Blackmores 综合维生素 200粒',nameEn:'Blackmores Multivitamin 200 Tabs',cat:'health',price:168,origPrice:218,desc:'全面补充日常所需维生素与矿物质，提升免疫力，缓解疲劳，适合工作繁忙人群长期服用。',stock:180,active:true,img:''},
+      {id:17,name:'Swisse 钙片+维生素D 150粒',nameEn:'Swisse Calcium + Vitamin D3 150 Tabs',cat:'health',price:148,origPrice:188,desc:'高吸收率钙片配方，添加维生素D3促进钙质吸收，强健骨骼，适合中老年及术后恢复人群。',stock:130,active:true,img:''},
+      {id:18,name:'Bioglan 蔓越莓精华胶囊 60粒',nameEn:'Bioglan Cranberry Extract 60 Caps',cat:'health',price:138,origPrice:178,desc:'浓缩蔓越莓精华，辅助维护泌尿系统健康，天然植物配方，女性日常保养首选。',stock:140,active:true,img:''},
+      {id:7,name:'Aesop 玫瑰臀部护理霜',nameEn:'Aesop Resurrection Aromatique',cat:'beauty',price:368,origPrice:null,desc:'澳洲Aesop经典款，含乳木果油与玫瑰提取物，深度滋润干燥肌肤，香气优雅持久。',stock:60,active:true,img:''},
+      {id:8,name:'Jurlique 玫瑰水面膜套装',nameEn:'Jurlique Rose Water Mask Set',cat:'beauty',price:488,origPrice:628,desc:'来自澳洲南澳有机玫瑰园，温和补水保湿面膜4片装，适合各种肤质，敏感肌友好配方。',stock:75,active:true,img:''},
+      {id:9,name:'True Natural 美白精华液',nameEn:'True Natural Brightening Serum',cat:'beauty',price:288,origPrice:358,desc:'含烟酰胺+VC衍生物，提亮肤色，淡化色斑，澳洲有机认证原料，无防腐剂配方。',stock:110,active:true,img:''},
+      {id:19,name:'Jurlique 玫瑰晚安修复精油',nameEn:'Jurlique Rose Night Repair Oil',cat:'beauty',price:528,origPrice:678,desc:'富含玫瑰果油及维生素E，夜间深层修复肌肤屏障，淡化细纹，唤醒晨间紧致光泽肌肤。',stock:55,active:true,img:''},
+      {id:20,name:'Aesop 洁净舒缓洁面乳',nameEn:'Aesop Purifying Facial Cleanser',cat:'beauty',price:298,origPrice:null,desc:'温和洁面配方，含茶树及柳树皮萃取物，深层清洁同时舒缓肌肤，适合油性及混合性肌肤。',stock:85,active:true,img:''},
+      {id:21,name:'True Natural 复合酸去角质精华',nameEn:'True Natural AHA/BHA Exfoliating Serum',cat:'beauty',price:258,origPrice:328,desc:'果酸+水杨酸温和配方，加速角质代谢，改善肌肤纹理及毛孔粗大问题，新手建议夜间使用。',stock:95,active:true,img:''},
+      {id:10,name:'澳洲蜂蜜坚果燕麦棒 10支',nameEn:'Aussie Honey Nut Oat Bar 10pcs',cat:'food',price:88,origPrice:118,desc:'麦卢卡蜂蜜+澳洲坚果+整粒燕麦，低GI健康零食，无人工色素防腐剂，适合健身人群随身携带。',stock:300,active:true,img:''},
+      {id:11,name:'胶原蛋白软糖 60粒',nameEn:'Collagen Beauty Gummies 60pcs',cat:'food',price:128,origPrice:158,desc:'每粒含500mg胶原蛋白+维E+葡萄籽提取物，草莓风味，边吃边美容，Z世代爆款。',stock:240,active:true,img:''},
+      {id:12,name:'益生菌代餐奶昔 15包',nameEn:'Probiotic Meal Shake 15 Sachets',cat:'food',price:258,origPrice:318,desc:'高蛋白低卡路里，含20亿益生菌+膳食纤维，香草奶昔口味，健康代餐首选。',stock:160,active:true,img:''},
+      {id:22,name:'麦卢卡蜂蜜 UMF15+ 500g',nameEn:'Manuka Honey UMF15+ 500g',cat:'food',price:368,origPrice:458,desc:'新西兰进口麦卢卡蜂蜜，UMF15+高活性认证，天然抗氧化，可直接食用或冲泡蜂蜜水。',stock:70,active:true,img:''},
+      {id:23,name:'藜麦即食杯 6杯装',nameEn:'Quinoa Ready-to-Eat Cups 6pcs',cat:'food',price:108,origPrice:138,desc:'三色藜麦搭配杂蔬，即开即食，高纤低脂，办公室加餐或代餐的便捷健康选择。',stock:200,active:true,img:''},
+      {id:24,name:'综合莫林果干坚果包 12袋',nameEn:'Mixed Berry & Nut Trail Mix 12 Packs',cat:'food',price:98,origPrice:128,desc:'蓝莓干、蔓越莓干与澳洲坚果混合装，无添加蔗糖，独立小包装方便携带，健康解馋零食。',stock:260,active:true,img:''},
+    ];
+    localStorage.setItem('oneprime_products',JSON.stringify(prods));
   }
+  if(!localStorage.getItem('oneprime_users')){
+    localStorage.setItem('oneprime_users',JSON.stringify([
+      {id:1,name:'管理员',email:'admin@oneprime.com.au',provider:'email',role:'admin',createdAt:new Date().toISOString(),active:true,membership:null},
+    ]));
+  }
+  if(!localStorage.getItem('oneprime_orders')){
+    const now=Date.now();
+    const realOrders=[
+      {id:'ORD2025001',userId:2,userName:'张小姐',items:[{name:'慕易庄园赤霞珠',qty:2,price:298}],total:596,status:'completed',createdAt:new Date(now-86400000*3).toISOString()},
+      {id:'ORD2025002',userId:3,userName:'李先生',items:[{name:'Swisse 护肝片',qty:1,price:188}],total:188,status:'shipped',createdAt:new Date(now-86400000*1).toISOString()},
+      {id:'ORD2025003',userId:4,userName:'王女士',items:[{name:'胶原蛋白软糖',qty:3,price:128}],total:384,status:'processing',createdAt:new Date(now-3600000).toISOString()},
+    ];
+    localStorage.setItem('oneprime_orders',JSON.stringify(realOrders.concat(generateDemoRevenueOrders(now))));
+  }
+  loadData();
 }
 
 // Generates ~2 years of fake "completed" orders purely so the 收入趋势
@@ -220,31 +254,6 @@ async function initData(){
 // the dashboard's 总订单数/本月收入/最近订单 all explicitly filter these
 // out (see refreshAdminDashboard in admin.js), so they only ever appear
 // inside the revenue chart itself.
-async function seedDemoProductsIfEmpty(){
-  const prods=[
-    {id:1,name:'慕易庄园赤霞珠干红2021',nameEn:'Moui Estate Cabernet Sauvignon 2021',cat:'wine',price:298,origPrice:398,desc:'澳大利亚南澳地区精选赤霞珠葡萄，单宁丰厚，黑浆果与雪松香气交织，陈年12个月于法国橡木桶，适合搭配红肉料理。',stock:120,active:true,img:''},
-    {id:2,name:'慕易庄园西拉礼盒装',nameEn:'Moui Estate Shiraz Gift Box',cat:'wine',price:688,origPrice:888,desc:'双瓶礼盒装，精选2019年份西拉，深紫色泽，黑胡椒与紫罗兰香气层次丰富，余味悠长，馈赠佳品。',stock:48,active:true,img:''},
-    {id:3,name:'慕易庄园霞多丽干白',nameEn:'Moui Estate Chardonnay',cat:'wine',price:198,origPrice:258,desc:'清爽干白，绿苹果与柑橘香气，口感清新，略带矿物质风味，适合搭配海鲜及轻食料理。',stock:80,active:true,img:''},
-    {id:4,name:'Swisse 护肝片 120粒',nameEn:'Swisse Liver Detox 120 Tabs',cat:'health',price:188,origPrice:248,desc:'澳洲Swisse明星产品，含水飞蓟素+朝鲜蓟提取物，帮助肝脏排毒修复，适合经常饮酒及熬夜人群。',stock:200,active:true,img:''},
-    {id:5,name:'Blackmores 鱼油胶囊 400粒',nameEn:'Blackmores Omega-3 Fish Oil 400',cat:'health',price:298,origPrice:368,desc:'深海鱼油，富含EPA和DHA，支持心脑血管健康，改善关节灵活性，澳洲药房销量第一品牌。',stock:150,active:true,img:''},
-    {id:6,name:'Swisse 胶原蛋白液 500ml',nameEn:'Swisse Beauty Collagen Liquid',cat:'health',price:228,origPrice:298,desc:'口服胶原蛋白，含10,000mg水解胶原蛋白+维生素C，助力肌肤弹性与光泽，草莓口味，口感宜人。',stock:90,active:true,img:''},
-    {id:7,name:'Aesop 玫瑰护理霜',nameEn:'Aesop Resurrection Aromatique',cat:'beauty',price:368,origPrice:null,desc:'澳洲Aesop经典款，含乳木果油与玫瑰提取物，深度滋润干燥肌肤，香气优雅持久。',stock:60,active:true,img:''},
-    {id:8,name:'Jurlique 玫瑰水面膜套装',nameEn:'Jurlique Rose Water Mask Set',cat:'beauty',price:488,origPrice:628,desc:'来自澳洲南澳有机玫瑰园，温和补水保湿面膜4片装，适合各种肤质，敏感肌友好配方。',stock:75,active:true,img:''},
-    {id:9,name:'True Natural 美白精华液',nameEn:'True Natural Brightening Serum',cat:'beauty',price:288,origPrice:358,desc:'含烟酰胺+VC衍生物，提亮肤色，淡化色斑，澳洲有机认证原料，无防腐剂配方。',stock:110,active:true,img:''},
-    {id:10,name:'澳洲蜂蜜坚果燕麦棒 10支',nameEn:'Aussie Honey Nut Oat Bar 10pcs',cat:'food',price:88,origPrice:118,desc:'麦卢卡蜂蜜+澳洲坚果+整粒燕麦，低GI健康零食，无人工色素防腐剂，适合健身人群随身携带。',stock:300,active:true,img:''},
-    {id:11,name:'胶原蛋白软糖 60粒',nameEn:'Collagen Beauty Gummies 60pcs',cat:'food',price:128,origPrice:158,desc:'每粒含500mg胶原蛋白+维E+葡萄籽提取物，草莓风味，边吃边美容，Z世代爆款。',stock:240,active:true,img:''},
-    {id:12,name:'益生菌代餐奶昔 15包',nameEn:'Probiotic Meal Shake 15 Sachets',cat:'food',price:258,origPrice:318,desc:'高蛋白低卡路里，含20亿益生菌+膳食纤维，香草奶昔口味，健康代餐首选。',stock:160,active:true,img:''},
-  ];
-  if(state.users.length === 0){
-    const adminUser={id:1,name:'管理员',email:'admin@oneprime.com.au',provider:'email',role:'admin',createdAt:new Date().toISOString(),active:true,membership:null};
-    try{ await dbSaveUser(adminUser); }catch(e){ console.warn('Admin seed failed:', e); }
-  }
-  try{
-    const { error } = await db.from('products').insert(prods.map(productToRow));
-    if(error) console.warn('Product seed error:', error);
-  }catch(e){ console.warn('Seed failed:', e); }
-}
-
 function generateDemoRevenueOrders(now){
   const demo=[];
   const demoBuyers=['示例买家A','示例买家B','示例买家C','示例买家D'];
@@ -304,13 +313,14 @@ function saveSession(user){
 function restoreSession(){
   var id = localStorage.getItem('oneprime_session_user_id');
   if(!id) return null;
-  // state.users is already loaded from Supabase by init()
-  return (state.users||[]).find(function(x){ return String(x.id)===String(id); }) || null;
+  var users = JSON.parse(localStorage.getItem('oneprime_users')||'[]');
+  var u = users.find(function(x){ return String(x.id)===String(id); });
+  return u || null;
 }
 
-function saveProducts(){} // data written directly via dbSaveProduct()
-function saveUsers(){} // data written directly via dbSaveUser()
-function saveOrders(){} // data written directly via dbSaveOrder()
+function saveProducts(){localStorage.setItem('oneprime_products',JSON.stringify(state.products));}
+function saveUsers(){localStorage.setItem('oneprime_users',JSON.stringify(state.users));}
+function saveOrders(){localStorage.setItem('oneprime_orders',JSON.stringify(state.orders));}
 
 // ===== TOAST =====
 function toast(msg,dur){
@@ -321,37 +331,39 @@ function toast(msg,dur){
 }
 
 // ===== AUTH =====
-async function socialLogin(provider){
+function socialLogin(provider){
   const name = provider==='Google'?'Google 用户':provider==='Apple'?'Apple 用户':'Facebook 用户';
   const email = 'user_' + Date.now() + '@' + provider.toLowerCase() + '.com';
+  const users=JSON.parse(localStorage.getItem('oneprime_users')||'[]');
   const newUser={id:Date.now(),name:name,email:email,provider:provider,role:'customer',createdAt:new Date().toISOString(),active:true,membership:null};
-  try{ await dbSaveUser(newUser); }catch(e){ toast('注册失败，请稍后重试'); return; }
-  await loadData();
+  users.push(newUser);
+  localStorage.setItem('oneprime_users',JSON.stringify(users));
+  loadData();
   loginUser(newUser,false,true);
 }
 
-async function emailLogin(){
+function emailLogin(){
   const email=document.getElementById('loginEmail').value.trim();
   const pwd=document.getElementById('loginPwd').value;
   if(!email||!pwd){toast('请填写邮箱和密码');return;}
-  // Always fetch fresh from Supabase so newly registered users are found
-  const users=await dbGetUsers();
+  const users=JSON.parse(localStorage.getItem('oneprime_users')||'[]');
   const u=users.find(function(x){return x.email===email;});
   if(!u){toast('账户不存在，请先注册');return;}
   loginUser(u);
 }
 
-async function emailRegister(){
+function emailRegister(){
   const name=document.getElementById('regName').value.trim();
   const email=document.getElementById('regEmail').value.trim();
   const pwd=document.getElementById('regPwd').value;
   if(!name||!email||!pwd){toast('请填写所有字段');return;}
   if(pwd.length<6){toast('密码至少6位');return;}
-  const users=await dbGetUsers();
+  const users=JSON.parse(localStorage.getItem('oneprime_users')||'[]');
   if(users.find(function(x){return x.email===email;})){toast('该邮箱已注册');return;}
   const newUser={id:Date.now(),name:name,email:email,provider:'email',role:'customer',createdAt:new Date().toISOString(),active:true,membership:null};
-  try{ await dbSaveUser(newUser); }catch(e){ toast('注册失败，请稍后重试'); return; }
-  await loadData();
+  users.push(newUser);
+  localStorage.setItem('oneprime_users',JSON.stringify(users));
+  loadData();
   loginUser(newUser,false,true);
 }
 
@@ -895,7 +907,7 @@ function getUpgradeCost(targetTierKey){
   return Math.max(0, target.fee - alreadyPaid);
 }
 
-async function purchaseMembership(targetTierKey){
+function purchaseMembership(targetTierKey){
   if(!state.currentUser){ toast('请先登录'); openAuthModal(); return; }
   var tiers = loadMembershipTiers();
   var target = tiers[targetTierKey];
@@ -910,13 +922,14 @@ async function purchaseMembership(targetTierKey){
   var cost = getUpgradeCost(targetTierKey);
   if(!confirm('（模拟支付）确认支付 ¥'+cost+' '+(current?'补差价升级':'开通')+'为'+target.label+'吗？\n本站未接入真实支付，这里仅模拟扣款流程。')) return;
 
-  const updatedUser = Object.assign({}, state.currentUser, {
-    membership: targetTierKey,
-    membershipSince: new Date().toISOString()
-  });
-  try{ await dbSaveUser(updatedUser); }catch(e){ toast('操作失败，请稍后重试'); return; }
-  state.currentUser = updatedUser;
-  await loadData();
+  var users = JSON.parse(localStorage.getItem('oneprime_users')||'[]');
+  var idx = users.findIndex(function(u){return u.id===state.currentUser.id;});
+  if(idx===-1){ toast('用户数据异常，请重新登录'); return; }
+  users[idx].membership = targetTierKey;
+  users[idx].membershipSince = new Date().toISOString();
+  localStorage.setItem('oneprime_users', JSON.stringify(users));
+  state.currentUser = users[idx];
+  loadData();
   toast('🎉 已开通'+target.label+'（模拟支付成功）');
   // Immediately reflect the new tier everywhere relevant — without this,
   // the membership page kept showing the OLD tier/status until a manual
@@ -932,37 +945,41 @@ function toggleMobileNav(){
 }
 
 // ===== INIT =====
-// Everything is async now (Supabase calls), so we wrap startup in an
-// immediately-invoked async function so we can await loadData() before
-// any rendering happens — avoids a flash of empty product grids.
-(async function init(){
-  await initData(); // fetches products/orders/users from Supabase
+initData();
 
-  // Restore session AFTER loadData() so state.users is populated
-  var restoredUser = restoreSession();
+// Restore login session (see saveSession/restoreSession above) before any
+// rendering happens, so price displays, header state, and the membership
+// page all reflect the logged-in user immediately rather than briefly
+// flashing a "guest" state on every page load/navigation.
+var restoredUser = restoreSession();
+if(restoredUser){
+  state.currentUser = restoredUser;
+  state.isAdmin = restoredUser.role==='admin';
+}
+
+// Start on shop screen — no login required to browse.
+// Guarded on #homeProductGrid specifically (not just #shopScreen) because
+// membership.html reuses the #shopScreen header markup for login/logout,
+// but doesn't have the full shop SPA's home/category/checkout sections.
+if(document.getElementById('shopScreen')){
+  document.getElementById('shopScreen').classList.add('active');
+  // Reflect the restored session in the header UI immediately (this is
+  // the same header-population logic showShopScreen() does on login).
   if(restoredUser){
-    state.currentUser = restoredUser;
-    state.isAdmin = restoredUser.role==='admin';
+    document.getElementById('headerGuest').style.display='none';
+    document.getElementById('headerUser').style.display='';
+    document.getElementById('userNameDisplay').textContent=restoredUser.name;
+    document.getElementById('userAvatar').textContent=restoredUser.name[0].toUpperCase();
+    document.getElementById('dropUserEmail').textContent=restoredUser.email||restoredUser.name;
+    var ml0=document.getElementById('mobileLoginLink');
+    var mlo0=document.getElementById('mobileLogoutLink');
+    if(ml0)ml0.style.display='none';
+    if(mlo0)mlo0.style.display='';
   }
-
-  if(document.getElementById('shopScreen')){
-    document.getElementById('shopScreen').classList.add('active');
-    if(restoredUser){
-      document.getElementById('headerGuest').style.display='none';
-      document.getElementById('headerUser').style.display='';
-      document.getElementById('userNameDisplay').textContent=restoredUser.name;
-      document.getElementById('userAvatar').textContent=restoredUser.name[0].toUpperCase();
-      document.getElementById('dropUserEmail').textContent=restoredUser.email||restoredUser.name;
-      var ml0=document.getElementById('mobileLoginLink');
-      var mlo0=document.getElementById('mobileLogoutLink');
-      if(ml0)ml0.style.display='none';
-      if(mlo0)mlo0.style.display='';
-    }
-  }
-  if(document.getElementById('homeProductGrid')){
-    renderHomePage();
-    updateCategoryCounts();
-  }
-  if(document.getElementById('cartItems'))updateCart();
-  if(typeof refreshMembershipPage==='function')refreshMembershipPage();
-})();
+}
+if(document.getElementById('homeProductGrid')){
+  renderHomePage();
+  updateCategoryCounts();
+}
+if(document.getElementById('cartItems'))updateCart();
+if(typeof refreshMembershipPage==='function')refreshMembershipPage();
