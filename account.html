@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>我的账户 · OnePrime 恒旺国际</title>
+  <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/icon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/db.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=202507011116">
+  <style>
+    .acct-wrap{max-width:960px;margin:0 auto;padding:2rem 5vw 5rem;display:grid;grid-template-columns:220px 1fr;gap:2rem;align-items:start;}
+    /* ── Sidebar ── */
+    .acct-sidebar{position:sticky;top:80px;}
+    .acct-user-card{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.06);padding:1.5rem;text-align:center;margin-bottom:1rem;}
+    .acct-avatar{width:64px;height:64px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:var(--deep);margin:0 auto .75rem;}
+    .acct-display-name{font-weight:700;font-size:1rem;margin-bottom:.2rem;}
+    .acct-email{font-size:.75rem;color:var(--text-muted);}
+    .acct-tier-badge{display:inline-block;margin-top:.6rem;padding:3px 12px;border-radius:20px;font-size:.7rem;font-weight:700;background:var(--gold-pale);color:var(--mid);}
+    .acct-nav{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.06);overflow:hidden;}
+    .acct-nav-item{display:flex;align-items:center;gap:.65rem;padding:.8rem 1.25rem;font-size:.85rem;color:var(--text-muted);cursor:pointer;border-left:3px solid transparent;transition:all .2s;}
+    .acct-nav-item:hover{background:var(--cream);color:var(--text);}
+    .acct-nav-item.active{background:var(--gold-pale);color:var(--mid);border-left-color:var(--gold);font-weight:600;}
+    .acct-nav-icon{font-size:1rem;width:20px;text-align:center;}
+    /* ── Main panels ── */
+    .acct-panel{display:none;}
+    .acct-panel.active{display:block;}
+    .acct-card{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.06);overflow:hidden;margin-bottom:1.25rem;}
+    .acct-card-header{padding:1.25rem 1.5rem;border-bottom:1px solid rgba(0,0,0,.06);font-weight:700;font-size:.95rem;display:flex;align-items:center;justify-content:space-between;}
+    .acct-card-body{padding:1.5rem;}
+    /* Profile form */
+    .acct-field{margin-bottom:1.1rem;}
+    .acct-field label{display:block;font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:.3rem;letter-spacing:.03em;}
+    .acct-field input{width:100%;padding:10px 14px;border:1px solid rgba(0,0,0,.12);border-radius:6px;font-size:.88rem;color:var(--text);transition:border .2s;}
+    .acct-field input:focus{outline:none;border-color:var(--gold);}
+    .acct-field input:read-only{background:var(--cream);color:var(--text-muted);cursor:not-allowed;}
+    .acct-save-btn{background:var(--gold);border:none;color:var(--deep);padding:10px 24px;border-radius:6px;font-size:.88rem;font-weight:700;cursor:pointer;transition:background .2s;}
+    .acct-save-btn:hover{background:var(--gold-light);}
+    /* Membership status */
+    .ms-inner{background:var(--white);border-radius:var(--radius);border:1px solid rgba(0,0,0,.06);padding:1.5rem;display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;}
+    .ms-row{display:flex;flex-direction:column;gap:.25rem;}
+    .ms-label{font-size:.72rem;color:var(--text-muted);letter-spacing:.04em;}
+    .ms-value{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;}
+    /* Order list */
+    .order-row{display:flex;gap:1rem;padding:1rem 1.5rem;border-bottom:1px solid rgba(0,0,0,.05);align-items:flex-start;}
+    .order-row:last-child{border-bottom:none;}
+    .order-id{font-family:monospace;font-size:.72rem;color:var(--text-muted);margin-bottom:.3rem;}
+    .order-items-text{font-size:.83rem;font-weight:600;margin-bottom:.25rem;line-height:1.4;}
+    .order-meta{font-size:.75rem;color:var(--text-muted);}
+    .order-right{text-align:right;flex-shrink:0;}
+    .order-total{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--gold);}
+    .order-date{font-size:.72rem;color:var(--text-muted);margin-top:.25rem;}
+    .empty-orders{text-align:center;padding:3rem 1rem;color:var(--text-muted);}
+    .empty-orders .ei{font-size:2.5rem;margin-bottom:.75rem;}
+    /* Disclaimer */
+    .acct-disclaimer{font-size:.78rem;color:var(--text-muted);background:var(--cream);border-radius:6px;padding:.75rem 1rem;margin-top:.75rem;line-height:1.6;}
+    /* Mobile */
+    @media(max-width:700px){
+      .acct-wrap{grid-template-columns:1fr;padding:1rem 4vw 4rem;}
+      .acct-sidebar{position:static;}
+      .acct-nav{display:flex;overflow-x:auto;border-radius:8px;margin-bottom:1rem;}
+      .acct-nav::-webkit-scrollbar{display:none;}
+      .acct-nav-item{flex-direction:column;gap:.2rem;padding:.6rem .85rem;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;flex-shrink:0;font-size:.75rem;}
+      .acct-nav-item.active{border-left:none;border-bottom-color:var(--gold);}
+      .acct-user-card{display:flex;align-items:center;gap:1rem;text-align:left;padding:1rem 1.25rem;}
+      .acct-avatar{width:48px;height:48px;font-size:1.2rem;margin:0;flex-shrink:0;}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- AUTH MODAL -->
+  <div class="screen" id="authScreen" style="position:fixed;inset:0;z-index:500;background:rgba(10,6,4,0.88);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:1rem;min-height:0;">
+    <div class="auth-box" style="position:relative;">
+      <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
+      <div class="auth-logo">OnePrime</div>
+      <div class="auth-logo-sub">恒旺国际 · 品质生活商城</div>
+      <div id="authLogin">
+        <div class="auth-title">请先登录</div>
+        <div class="auth-sub">登录后查看您的账户信息</div>
+        <div class="auth-divider">使用邮箱登录</div>
+        <input class="auth-input" type="email" id="loginEmail" placeholder="邮箱地址" />
+        <input class="auth-input" type="password" id="loginPwd" placeholder="密码" />
+        <button class="auth-btn" onclick="emailLogin()">登录</button>
+        <div class="auth-toggle">还没有账户？<a onclick="switchAuthMode('register')">立即注册</a></div>
+      </div>
+      <div id="authRegister" class="hidden">
+        <div class="auth-title">创建账户</div>
+        <input class="auth-input" type="text" id="regName" placeholder="姓名" />
+        <input class="auth-input" type="email" id="regEmail" placeholder="邮箱地址" />
+        <input class="auth-input" type="password" id="regPwd" placeholder="密码（至少6位）" />
+        <button class="auth-btn" onclick="emailRegister()">注册</button>
+        <div class="auth-toggle">已有账户？<a onclick="switchAuthMode('login')">返回登录</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen active" id="shopScreen">
+    <!-- Header -->
+    <header class="shop-header">
+      <a class="sh-logo" href="index.html">OnePrime<span>恒旺国际</span></a>
+      <ul class="sh-nav">
+        <li><a href="index.html">首页</a></li>
+        <li><a href="index.html">🍷 红酒</a></li>
+        <li><a href="index.html">💊 大健康</a></li>
+        <li><a href="index.html">✨ 美妆护肤</a></li>
+        <li><a href="index.html">🌿 功能性食品</a></li>
+        <li><a href="membership.html" style="color:var(--gold);">💎 会员权益</a></li>
+      </ul>
+      <div class="sh-right">
+        <div id="headerGuest">
+          <button class="nav-login-btn" onclick="openAuthModal()">登录 / 注册</button>
+        </div>
+        <div id="headerUser" style="display:none;position:relative;">
+          <div class="sh-user" onclick="toggleUserDropdown()">
+            <div class="sh-avatar" id="userAvatar">U</div>
+            <span id="userNameDisplay" style="color:rgba(255,255,255,0.6);font-size:.78rem;"></span>
+            <span style="color:rgba(255,255,255,0.3);font-size:.65rem;margin-left:.2rem;">▾</span>
+          </div>
+          <div id="userDropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--deep);border:1px solid rgba(201,168,76,0.2);border-radius:8px;min-width:140px;overflow:hidden;z-index:100;">
+            <div style="padding:.6rem 1rem;font-size:.78rem;color:rgba(255,255,255,0.35);border-bottom:1px solid rgba(255,255,255,0.06);" id="dropUserEmail"></div>
+            <a href="account.html" style="display:block;padding:.7rem 1rem;color:rgba(255,255,255,0.6);font-size:.82rem;text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">👤 我的账户</a>
+            <button onclick="logout()" style="width:100%;text-align:left;padding:.7rem 1rem;background:none;border:none;color:rgba(255,255,255,0.6);font-size:.82rem;cursor:pointer;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">退出登录</button>
+          </div>
+        </div>
+        <button class="ham-btn" onclick="toggleMobileNav()"><span></span><span></span><span></span></button>
+      </div>
+    </header>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
+      <a href="index.html">首页</a>
+      <a href="membership.html" style="color:var(--gold);">💎 会员权益</a>
+      <a href="account.html" style="color:var(--gold);">👤 我的账户</a>
+      <a id="mobileLoginLink" onclick="openAuthModal();toggleMobileNav()" style="color:rgba(255,255,255,0.5);font-size:.9rem;">登录 / 注册</a>
+      <a id="mobileLogoutLink" onclick="logout();toggleMobileNav()" style="display:none;color:rgba(255,255,255,0.4);font-size:.85rem;">退出登录</a>
+    </div>
+
+    <!-- PAGE HERO -->
+    <div class="shop-hero" style="padding:50px 5vw 40px;">
+      <h1 style="font-size:clamp(1.4rem,3.5vw,2rem);">我的<em>账户</em></h1>
+      <p>管理您的个人信息、订单记录与会员权益</p>
+    </div>
+
+    <!-- NOT LOGGED IN STATE -->
+    <div id="acctNotLoggedIn" style="display:none;text-align:center;padding:5rem 2rem;">
+      <div style="font-size:3rem;margin-bottom:1rem;">🔒</div>
+      <h3 style="font-family:'Playfair Display',serif;margin-bottom:.5rem;">请先登录</h3>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:.88rem;">登录后可查看订单历史、会员状态和个人信息</p>
+      <button class="acct-save-btn" onclick="openAuthModal()">登录 / 注册</button>
+    </div>
+
+    <!-- ACCOUNT CONTENT -->
+    <div class="acct-wrap" id="acctContent" style="display:none;">
+
+      <!-- Sidebar -->
+      <aside class="acct-sidebar">
+        <div class="acct-user-card">
+          <div class="acct-avatar" id="acctAvatarLarge">U</div>
+          <div>
+            <div class="acct-display-name" id="acctDisplayName">—</div>
+            <div class="acct-email" id="acctDisplayEmail">—</div>
+            <div class="acct-tier-badge" id="acctTierBadge">非会员</div>
+          </div>
+        </div>
+        <nav class="acct-nav">
+          <div class="acct-nav-item active" onclick="switchAcctTab('orders')"><span class="acct-nav-icon">🧾</span>我的订单</div>
+          <div class="acct-nav-item" onclick="switchAcctTab('profile')"><span class="acct-nav-icon">👤</span>个人信息</div>
+          <div class="acct-nav-item" onclick="switchAcctTab('membership')"><span class="acct-nav-icon">💎</span>会员状态</div>
+          <div class="acct-nav-item" onclick="switchAcctTab('password')"><span class="acct-nav-icon">🔑</span>修改密码</div>
+        </nav>
+      </aside>
+
+      <!-- Main -->
+      <main>
+
+        <!-- ── 我的订单 ── -->
+        <div class="acct-panel active" id="acct-panel-orders">
+          <div class="acct-card">
+            <div class="acct-card-header">
+              我的订单
+              <select class="filter-select" id="acctOrderFilter" onchange="renderAccountOrders()" style="font-size:.78rem;padding:6px 10px;">
+                <option value="all">全部状态</option>
+                <option value="processing">处理中</option>
+                <option value="shipped">已发货</option>
+                <option value="completed">已完成</option>
+                <option value="pending">待付款</option>
+                <option value="cancelled">已取消</option>
+              </select>
+            </div>
+            <div id="acctOrderList"></div>
+          </div>
+        </div>
+
+        <!-- ── 个人信息 ── -->
+        <div class="acct-panel" id="acct-panel-profile">
+          <div class="acct-card">
+            <div class="acct-card-header">个人信息</div>
+            <div class="acct-card-body">
+              <div class="acct-field">
+                <label>姓名</label>
+                <input type="text" id="acctName" placeholder="您的姓名" />
+              </div>
+              <div class="acct-field">
+                <label>邮箱地址</label>
+                <input type="email" id="acctEmail" readonly />
+              </div>
+              <div class="acct-field">
+                <label>注册方式</label>
+                <input type="text" id="acctProvider" readonly />
+              </div>
+              <div class="acct-field">
+                <label>注册时间</label>
+                <input type="text" id="acctJoined" readonly />
+              </div>
+              <button class="acct-save-btn" onclick="saveProfile()">保存修改</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 会员状态 ── -->
+        <div class="acct-panel" id="acct-panel-membership">
+          <div class="acct-card">
+            <div class="acct-card-header">会员状态</div>
+            <div class="acct-card-body" id="acctMembershipBody"></div>
+          </div>
+        </div>
+
+        <!-- ── 修改密码 ── -->
+        <div class="acct-panel" id="acct-panel-password">
+          <div class="acct-card">
+            <div class="acct-card-header">修改密码</div>
+            <div class="acct-card-body">
+              <div class="acct-field">
+                <label>当前密码</label>
+                <input type="password" id="pwdCurrent" placeholder="输入当前密码" />
+              </div>
+              <div class="acct-field">
+                <label>新密码</label>
+                <input type="password" id="pwdNew" placeholder="至少6位" />
+              </div>
+              <div class="acct-field">
+                <label>确认新密码</label>
+                <input type="password" id="pwdConfirm" placeholder="再次输入新密码" />
+              </div>
+              <button class="acct-save-btn" onclick="changePassword()">确认修改</button>
+              <div class="acct-disclaimer">⚠️ 本站为演示项目，密码修改为模拟流程，不会产生实际的身份验证变更。</div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div><!-- /acct-wrap -->
+
+  </div><!-- /shopScreen -->
+
+  <script src="js/script.js?v=202507011116"></script>
+  <script src="js/account.js?v=202507011116"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("/sw.js").catch(function(err) {
+          console.warn("SW registration failed:", err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
