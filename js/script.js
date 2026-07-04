@@ -243,7 +243,7 @@ function initData(){
     ];
     localStorage.setItem('oneprime_orders',JSON.stringify(realOrders.concat(generateDemoRevenueOrders(now))));
   }
-  loadData();
+  return loadData(); // return the promise so the init block can await it
 }
 
 // Generates ~2 years of fake "completed" orders purely so the 收入趋势
@@ -945,26 +945,20 @@ function toggleMobileNav(){
 }
 
 // ===== INIT =====
-initData();
-
-// Restore login session (see saveSession/restoreSession above) before any
-// rendering happens, so price displays, header state, and the membership
-// page all reflect the logged-in user immediately rather than briefly
-// flashing a "guest" state on every page load/navigation.
+// Step 1 — restore session synchronously so the header renders correctly
+// on the very first paint, before the Supabase fetch completes.
 var restoredUser = restoreSession();
 if(restoredUser){
   state.currentUser = restoredUser;
   state.isAdmin = restoredUser.role==='admin';
 }
 
-// Start on shop screen — no login required to browse.
-// Guarded on #homeProductGrid specifically (not just #shopScreen) because
-// membership.html reuses the #shopScreen header markup for login/logout,
-// but doesn't have the full shop SPA's home/category/checkout sections.
+// Step 2 — show the shop shell immediately (header + skeleton layout) so
+// the page doesn't look blank while we wait for Supabase to respond.
+// Guarded on #shopScreen not #homeProductGrid because membership.html also
+// has the shared header but not the full SPA sections.
 if(document.getElementById('shopScreen')){
   document.getElementById('shopScreen').classList.add('active');
-  // Reflect the restored session in the header UI immediately (this is
-  // the same header-population logic showShopScreen() does on login).
   if(restoredUser){
     document.getElementById('headerGuest').style.display='none';
     document.getElementById('headerUser').style.display='';
@@ -977,9 +971,15 @@ if(document.getElementById('shopScreen')){
     if(mlo0)mlo0.style.display='';
   }
 }
-if(document.getElementById('homeProductGrid')){
-  renderHomePage();
-  updateCategoryCounts();
-}
-if(document.getElementById('cartItems'))updateCart();
-if(typeof refreshMembershipPage==='function')refreshMembershipPage();
+
+// Step 3 — fetch data from Supabase, then render product grids / category
+// counts / cart. Nothing product-related renders until the data is ready,
+// so the category counts never flash a stale "— 款" value.
+initData().then(function(){
+  if(document.getElementById('homeProductGrid')){
+    renderHomePage();
+    updateCategoryCounts();
+  }
+  if(document.getElementById('cartItems'))updateCart();
+  if(typeof refreshMembershipPage==='function')refreshMembershipPage();
+});
