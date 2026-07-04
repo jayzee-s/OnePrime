@@ -121,25 +121,25 @@
           <div class="cat-icon">🍷</div>
           <div class="cat-name">澳洲进口红酒</div>
           <div class="cat-en">AUSTRALIAN RED WINE</div>
-          <div class="cat-count" id="cat-count-wine">— 款</div>
+          <div class="cat-count" id="cat-count-wine"></div>
         </div>
         <div class="cat-card" onclick="showCategory('health')">
           <div class="cat-icon">💊</div>
           <div class="cat-name">大健康保健品</div>
           <div class="cat-en">HEALTH SUPPLEMENTS</div>
-          <div class="cat-count" id="cat-count-health">— 款</div>
+          <div class="cat-count" id="cat-count-health"></div>
         </div>
         <div class="cat-card" onclick="showCategory('beauty')">
           <div class="cat-icon">✨</div>
           <div class="cat-name">美妆护肤</div>
           <div class="cat-en">BEAUTY & SKINCARE</div>
-          <div class="cat-count" id="cat-count-beauty">— 款</div>
+          <div class="cat-count" id="cat-count-beauty"></div>
         </div>
         <div class="cat-card" onclick="showCategory('food')">
           <div class="cat-icon">🌿</div>
           <div class="cat-name">功能性食品</div>
           <div class="cat-en">FUNCTIONAL FOODS</div>
-          <div class="cat-count" id="cat-count-food">— 款</div>
+          <div class="cat-count" id="cat-count-food"></div>
         </div>
       </div>
       <a class="membership-banner" href="membership.html">
@@ -342,7 +342,7 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function() {
-        navigator.serviceWorker.register("/sw.js").catch(function(err) {
+        navigator.serviceWorker.register("/js/sw.js", { scope: "/" }).catch(function(err) {
           console.warn("SW registration failed:", err);
         });
       });

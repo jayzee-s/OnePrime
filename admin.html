@@ -355,10 +355,10 @@ if (entered !== ADMIN_PASSWORD) {
       <!-- DASHBOARD -->
       <div class="admin-panel active" id="panel-dashboard">
         <div class="stats-grid">
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('products')"><div class="stat-label">总商品数</div><div class="stat-value" id="statProducts">0</div><div class="stat-change up" id="statProductsChange"></div></div>
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('orders')"><div class="stat-label">总订单数</div><div class="stat-value" id="statOrders">0</div><div class="stat-change up">↑ 本月新增</div></div>
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('users')"><div class="stat-label">注册用户</div><div class="stat-value" id="statUsers">0</div><div class="stat-change up">↑ 持续增长</div></div>
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('revenue')"><div class="stat-label">本月收入</div><div class="stat-value text-gold" id="statRevenue">¥0</div><div class="stat-change up">已完成订单 · 查看趋势 →</div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('products')"><div class="stat-label">总商品数</div><div class="stat-value" id="statProducts">—</div><div class="stat-change up" id="statProductsChange"></div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('orders')"><div class="stat-label">总订单数</div><div class="stat-value" id="statOrders">—</div><div class="stat-change up">↑ 本月新增</div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('users')"><div class="stat-label">注册用户</div><div class="stat-value" id="statUsers">—</div><div class="stat-change up">↑ 持续增长</div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('revenue')"><div class="stat-label">本月收入</div><div class="stat-value text-gold" id="statRevenue">—</div><div class="stat-change up">已完成订单 · 查看趋势 →</div></div>
         </div>
         <div class="admin-card">
           <div class="admin-card-header"><div class="admin-card-title">各分类商品分布</div></div>
@@ -635,7 +635,7 @@ if (entered !== ADMIN_PASSWORD) {
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function() {
-        navigator.serviceWorker.register("/sw.js").catch(function(err) {
+        navigator.serviceWorker.register("/js/sw.js", { scope: "/" }).catch(function(err) {
           console.warn("SW registration failed:", err);
         });
       });
