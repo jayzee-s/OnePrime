@@ -46,10 +46,10 @@ function showAdminPanel(name) {
     i.classList.remove('active');
   });
   // Update desktop sidebar active state
-  var titles = {dashboard:'数据概览', products:'商品管理', orders:'订单管理', users:'用户管理', revenue:'收入趋势', membership:'会员管理'};
+  var titles = {dashboard:'数据概览', products:'商品管理', orders:'订单管理', users:'用户管理', revenue:'收入趋势', membership:'会员管理', referral:'推荐佣金'};
   document.getElementById('adminPageTitle').textContent = titles[name] || name;
   var navItems = document.querySelectorAll('.admin-nav-item');
-  var idx = {dashboard:0, products:1, orders:2, users:3, revenue:4, membership:5};
+  var idx = {dashboard:0, products:1, orders:2, users:3, revenue:4, membership:5, referral:6};
   if (navItems[idx[name]]) navItems[idx[name]].classList.add('active');
   // Update mobile nav active state
   document.querySelectorAll('.admin-mobile-nav-item').forEach(function(item) {
@@ -61,6 +61,7 @@ function showAdminPanel(name) {
   if (name === 'users') renderUsers();
   if (name === 'revenue') renderRevenueChart();
   if (name === 'membership') renderMembershipAdmin();
+  if (name === 'referral') renderReferralAdmin();
 }
 
 // Jump to 商品管理 pre-filtered to a given category — used by the
@@ -1032,6 +1033,137 @@ function saveMembershipTierEdit(tierKey) {
   toast(t.label+' 设置已保存');
 }
 
+
+// ===== 推荐佣金管理 =====
+var _refAllCommissions = [];
+
+async function renderReferralAdmin() {
+  // Load rates from Supabase settings table
+  var settings = {};
+  try { settings = await dbGetSettings(); } catch(e) {}
+
+  var rn = document.getElementById('commissionRateNormal');
+  var rm = document.getElementById('commissionRateManager');
+  var rd = document.getElementById('commissionRateDealer');
+  if (rn) rn.value = Math.round((parseFloat(settings['commission_rate_normal']  || '0.03')) * 100);
+  if (rm) rm.value = Math.round((parseFloat(settings['commission_rate_manager'] || '0.05')) * 100);
+  if (rd) rd.value = Math.round((parseFloat(settings['commission_rate_dealer']  || '0.08')) * 100);
+
+  _refAllCommissions = await dbGetAllCommissions();
+  renderRefAdminStats(_refAllCommissions);
+  renderRefTopReferrers(_refAllCommissions);
+  renderRefHistoryAdmin(_refAllCommissions);
+}
+
+async function saveCommissionRatesAdmin() {
+  var rn = document.getElementById('commissionRateNormal');
+  var rm = document.getElementById('commissionRateManager');
+  var rd = document.getElementById('commissionRateDealer');
+  var pctN = parseFloat(rn ? rn.value : 3);
+  var pctM = parseFloat(rm ? rm.value : 5);
+  var pctD = parseFloat(rd ? rd.value : 8);
+  if ([pctN,pctM,pctD].some(function(v){ return isNaN(v)||v<0||v>100; })) {
+    toast('请输入 0~100 之间的数字'); return;
+  }
+  try {
+    await dbSetSetting('commission_rate_normal',  String(pctN / 100));
+    await dbSetSetting('commission_rate_manager', String(pctM / 100));
+    await dbSetSetting('commission_rate_dealer',  String(pctD / 100));
+    toast('佣金比例已保存 ✓');
+  } catch(e) { toast('保存失败：' + e.message); }
+}
+
+function renderRefAdminStats(commissions) {
+  var referrerSet = new Set(commissions.map(function(c){ return c.referrerId; }));
+  var downlineSet = new Set(commissions.map(function(c){ return c.referredUserId; }));
+  var total = commissions.reduce(function(s,c){ return s+c.commissionAmount; }, 0);
+  var el;
+  el=document.getElementById('refAdminReferrers'); if(el) el.textContent=referrerSet.size;
+  el=document.getElementById('refAdminDownlines'); if(el) el.textContent=downlineSet.size;
+  el=document.getElementById('refAdminOrders');   if(el) el.textContent=commissions.length;
+  el=document.getElementById('refAdminTotal');    if(el) el.textContent='¥'+total.toFixed(2);
+}
+
+function renderRefTopReferrers(commissions) {
+  var map = {};
+  commissions.forEach(function(c) {
+    var k = c.referrerId;
+    if (!map[k]) map[k] = {referrerId:k, total:0, orders:0, downlines:new Set()};
+    map[k].total += c.commissionAmount;
+    map[k].orders += 1;
+    map[k].downlines.add(c.referredUserId);
+  });
+  var rows = Object.values(map).sort(function(a,b){ return b.total-a.total; });
+  function getName(id) {
+    var u=state.users.find(function(x){ return String(x.id)===String(id); });
+    return u ? u.name : id;
+  }
+  var tableEl = document.getElementById('refTopTable');
+  var cardsEl = document.getElementById('refTopCards');
+  if (!rows.length) {
+    var empty='<div style="padding:1.5rem;text-align:center;color:var(--text-muted);">暂无推荐记录</div>';
+    if(tableEl) tableEl.innerHTML=empty; if(cardsEl) cardsEl.innerHTML=''; return;
+  }
+  if(tableEl) tableEl.innerHTML=
+    '<table><thead><tr><th>推荐人</th><th>等级</th><th>下线人数</th><th>佣金订单数</th><th>累计佣金</th></tr></thead><tbody>'+
+    rows.map(function(r){
+      var tiers=loadMembershipTiers();
+      var user=state.users.find(function(x){return String(x.id)===String(r.referrerId);});
+      var tierLabel=user&&user.membership&&tiers[user.membership]?tiers[user.membership].label:'非会员';
+      return '<tr>'+
+        '<td style="font-weight:600;">'+getName(r.referrerId)+'</td>'+
+        '<td><span class="badge badge-gold">'+tierLabel+'</span></td>'+
+        '<td>'+r.downlines.size+'</td>'+
+        '<td>'+r.orders+'</td>'+
+        '<td style="font-weight:700;color:var(--gold);">¥'+r.total.toFixed(2)+'</td>'+
+      '</tr>';
+    }).join('')+'</tbody></table>';
+  if(cardsEl) cardsEl.innerHTML=rows.map(function(r){
+    var tiers=loadMembershipTiers();
+    var user=state.users.find(function(x){return String(x.id)===String(r.referrerId);});
+    var tierLabel=user&&user.membership&&tiers[user.membership]?tiers[user.membership].label:'非会员';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.85rem 1rem;border-bottom:1px solid rgba(0,0,0,.05);">'+
+      '<div><div style="font-weight:600;font-size:.88rem;">'+getName(r.referrerId)+'</div>'+
+      '<div style="font-size:.75rem;color:var(--text-muted);margin-top:.15rem;"><span class="badge badge-gold">'+tierLabel+'</span> · 下线 '+r.downlines.size+' 人 · '+r.orders+' 笔</div></div>'+
+      '<div style="font-weight:700;color:var(--gold);">¥'+r.total.toFixed(2)+'</div></div>';
+  }).join('');
+}
+
+function renderRefHistoryAdmin(commissions) {
+  function getName(id){var u=state.users.find(function(x){return String(x.id)===String(id);});return u?u.name:String(id).slice(0,8)+'…';}
+  var tableEl=document.getElementById('refHistoryAdminTable');
+  var cardsEl=document.getElementById('refHistoryAdminCards');
+  if(!commissions.length){
+    var empty='<div style="padding:1.5rem;text-align:center;color:var(--text-muted);">暂无记录</div>';
+    if(tableEl)tableEl.innerHTML=empty;if(cardsEl)cardsEl.innerHTML='';return;
+  }
+  if(tableEl) tableEl.innerHTML=
+    '<table><thead><tr><th>推荐人</th><th>下线用户</th><th>订单号</th><th>订单金额</th><th>比例</th><th>佣金</th><th>时间</th></tr></thead><tbody>'+
+    commissions.map(function(c){return '<tr>'+
+      '<td style="font-weight:600;">'+getName(c.referrerId)+'</td>'+
+      '<td style="color:var(--text-muted);">'+getName(c.referredUserId)+'</td>'+
+      '<td style="font-family:monospace;font-size:.74rem;">'+c.orderId+'</td>'+
+      '<td>¥'+c.orderTotal.toFixed(2)+'</td>'+
+      '<td>'+Math.round(c.commissionRate*100)+'%</td>'+
+      '<td style="font-weight:700;color:var(--gold);">¥'+c.commissionAmount.toFixed(2)+'</td>'+
+      '<td style="font-size:.74rem;color:var(--text-muted);">'+fmtDate(c.createdAt)+'</td>'+
+    '</tr>';}).join('')+'</tbody></table>';
+  if(cardsEl) cardsEl.innerHTML=commissions.map(function(c){return '<div style="padding:.85rem 1rem;border-bottom:1px solid rgba(0,0,0,.05);">'+
+    '<div style="display:flex;justify-content:space-between;"><span style="font-weight:600;font-size:.85rem;">'+getName(c.referrerId)+'</span>'+
+    '<span style="font-weight:700;color:var(--gold);">+¥'+c.commissionAmount.toFixed(2)+'</span></div>'+
+    '<div style="font-size:.76rem;color:var(--text-muted);margin-top:.2rem;">下线：'+getName(c.referredUserId)+' · 订单 ¥'+c.orderTotal.toFixed(2)+' × '+Math.round(c.commissionRate*100)+'%</div>'+
+    '<div style="font-family:monospace;font-size:.72rem;color:var(--text-muted);margin-top:.1rem;">'+c.orderId+' · '+fmtDate(c.createdAt)+'</div></div>';}).join('');
+}
+
+function filterRefHistory() {
+  var q=(document.getElementById('refSearchInput')?document.getElementById('refSearchInput').value:'').toLowerCase();
+  if(!q){renderRefHistoryAdmin(_refAllCommissions);return;}
+  function getName(id){var u=state.users.find(function(x){return String(x.id)===String(id);});return u?u.name.toLowerCase():String(id);}
+  renderRefHistoryAdmin(_refAllCommissions.filter(function(c){
+    return getName(c.referrerId).indexOf(q)!==-1||getName(c.referredUserId).indexOf(q)!==-1||c.orderId.toLowerCase().indexOf(q)!==-1;
+  }));
+}
+
 // ===== LOGOUT =====
 function logout() {
   if (confirm('确定要退出后台吗？')) {
@@ -1041,6 +1173,16 @@ function logout() {
 
 // ===== INIT =====
 (async function(){
+  // Auth guard: verify Supabase session + admin role before showing anything
+  try{
+    var sr=await db.auth.getSession();
+    if(!sr.data.session){ alert('请先登录'); window.location.href='index.html'; return; }
+    var uid=sr.data.session.user.id;
+    var pr=await db.from('users').select('role').eq('id',uid).single();
+    if(pr.error||!pr.data||pr.data.role!=='admin'){ alert('⛔ 您没有管理员权限'); window.location.href='index.html'; return; }
+  }catch(e){ alert('认证失败，请重新登录'); window.location.href='index.html'; return; }
+  document.body.style.visibility='visible';
+
   state.productPage = state.productPage || 1;
   await loadData();
   await refreshAdminDashboard();

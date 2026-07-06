@@ -89,6 +89,34 @@ function loadMembershipTiers(){
 function saveMembershipTiers(tiers){
   localStorage.setItem('oneprime_membership_tiers', JSON.stringify(tiers));
 }
+// ===== REFERRAL / COMMISSION HELPERS =====
+function loadCommissionRate(){
+  // Legacy single rate — superseded by tiered DB rates.
+  // Kept so existing referral.js rate display still works.
+  var v = localStorage.getItem('oneprime_commission_rate');
+  return v !== null ? parseFloat(v) : 0.05;
+}
+
+// Called on every page load: stash ?ref= in sessionStorage for registration.
+function checkRefParam(){
+  try {
+    var ref = new URLSearchParams(window.location.search).get('ref');
+    if(ref) sessionStorage.setItem('oneprime_pending_ref', ref);
+  } catch(e){}
+}
+
+// onDataReady hook — page-specific scripts (referral.js) wait here.
+var _dataReadyCallbacks = [];
+var _dataReady = false;
+function onDataReady(fn){
+  if(_dataReady) fn();
+  else _dataReadyCallbacks.push(fn);
+}
+function _fireDataReady(){
+  _dataReady = true;
+  _dataReadyCallbacks.forEach(function(fn){ try{ fn(); }catch(e){ console.error(e); } });
+}
+
 
 function getTierOrdered(){
   var tiers = loadMembershipTiers();
@@ -243,7 +271,7 @@ function initData(){
     ];
     localStorage.setItem('oneprime_orders',JSON.stringify(realOrders.concat(generateDemoRevenueOrders(now))));
   }
-  return loadData(); // return the promise so the init block can await it
+  return loadData();
 }
 
 // Generates ~2 years of fake "completed" orders purely so the 收入趋势
@@ -305,17 +333,17 @@ async function loadData() {
 // separate page (membership.html) while staying logged in. We persist
 // only the user's id (not the whole object, which can go stale) and
 // re-look-up the full user record from oneprime_users on every load.
-function saveSession(user){
-  if(user) localStorage.setItem('oneprime_session_user_id', String(user.id));
-  else localStorage.removeItem('oneprime_session_user_id');
-}
-
-function restoreSession(){
-  var id = localStorage.getItem('oneprime_session_user_id');
-  if(!id) return null;
-  var users = JSON.parse(localStorage.getItem('oneprime_users')||'[]');
-  var u = users.find(function(x){ return String(x.id)===String(id); });
-  return u || null;
+// Session is managed by Supabase Auth SDK.
+// restoreSession() reads the persisted JWT — no extra network call.
+async function restoreSession(){
+  try{
+    var res = await db.auth.getSession();
+    if(!res.data.session) return null;
+    var uid = res.data.session.user.id;
+    var pr = await db.from('users').select('*').eq('id', uid).single();
+    if(pr.error || !pr.data) return null;
+    return rowToUser(pr.data);
+  }catch(e){ console.warn('restoreSession:', e); return null; }
 }
 
 function saveProducts(){localStorage.setItem('oneprime_products',JSON.stringify(state.products));}
@@ -332,50 +360,70 @@ function toast(msg,dur){
 
 // ===== AUTH =====
 function socialLogin(provider){
-  const name = provider==='Google'?'Google 用户':provider==='Apple'?'Apple 用户':'Facebook 用户';
-  const email = 'user_' + Date.now() + '@' + provider.toLowerCase() + '.com';
-  const users=JSON.parse(localStorage.getItem('oneprime_users')||'[]');
-  const newUser={id:Date.now(),name:name,email:email,provider:provider,role:'customer',createdAt:new Date().toISOString(),active:true,membership:null};
-  users.push(newUser);
-  localStorage.setItem('oneprime_users',JSON.stringify(users));
-  loadData();
-  loginUser(newUser,false,true);
+  // Social OAuth requires Supabase dashboard → Authentication → Providers setup.
+  toast('社交登录配置中，请使用邮箱登录');
 }
 
-function emailLogin(){
+async function emailLogin(){
   const email=document.getElementById('loginEmail').value.trim();
   const pwd=document.getElementById('loginPwd').value;
   if(!email||!pwd){toast('请填写邮箱和密码');return;}
-  const users=JSON.parse(localStorage.getItem('oneprime_users')||'[]');
-  const u=users.find(function(x){return x.email===email;});
-  if(!u){toast('账户不存在，请先注册');return;}
-  loginUser(u);
+  var btn=document.querySelector('#authLogin .auth-btn');
+  if(btn){btn.disabled=true;btn.textContent='登录中…';}
+  try{
+    var res=await db.auth.signInWithPassword({email:email,password:pwd});
+    if(res.error){toast('邮箱或密码错误');return;}
+    var pr=await db.from('users').select('*').eq('id',res.data.user.id).single();
+    if(pr.error||!pr.data){toast('用户信息加载失败，请重试');return;}
+    await loadData();
+    loginUser(rowToUser(pr.data));
+  }catch(e){toast('登录失败：'+e.message);
+  }finally{if(btn){btn.disabled=false;btn.textContent='登录';}}
 }
 
-function emailRegister(){
+async function emailRegister(){
   const name=document.getElementById('regName').value.trim();
   const email=document.getElementById('regEmail').value.trim();
   const pwd=document.getElementById('regPwd').value;
   if(!name||!email||!pwd){toast('请填写所有字段');return;}
   if(pwd.length<6){toast('密码至少6位');return;}
-  const users=JSON.parse(localStorage.getItem('oneprime_users')||'[]');
-  if(users.find(function(x){return x.email===email;})){toast('该邮箱已注册');return;}
-  const newUser={id:Date.now(),name:name,email:email,provider:'email',role:'customer',createdAt:new Date().toISOString(),active:true,membership:null};
-  users.push(newUser);
-  localStorage.setItem('oneprime_users',JSON.stringify(users));
-  loadData();
-  loginUser(newUser,false,true);
+  var btn=document.querySelector('#authRegister .auth-btn');
+  if(btn){btn.disabled=true;btn.textContent='注册中…';}
+  try{
+    var su=await db.auth.signUp({email:email,password:pwd});
+    if(su.error){toast(su.error.message);return;}
+    var authUser=su.data.user;
+    if(!authUser){toast('注册失败，请重试');return;}
+    var pendingRef=sessionStorage.getItem('oneprime_pending_ref');
+    if(pendingRef&&String(pendingRef)===String(authUser.id)) pendingRef=null;
+    const newUser={
+      id:authUser.id, name:name, email:email, provider:'email',
+      role:'customer', membership:null, referredBy:pendingRef||null,
+      active:true, createdAt:new Date().toISOString()
+    };
+    await dbSaveUser(newUser);
+    sessionStorage.removeItem('oneprime_pending_ref');
+    await loadData();
+    loginUser(newUser,false,!newUser.membership);
+  }catch(e){toast('注册失败：'+e.message);
+  }finally{if(btn){btn.disabled=false;btn.textContent='注册';}}
 }
 
 function adminLogin(){
-  loginUser({id:1,name:'管理员',email:'admin@oneprime.com.au',provider:'email',role:'admin'},true);
+  window.location.href='admin.html'; // admin auth verified on admin.html load
 }
 
 function loginUser(u,isAdmin,isNewRegistration){
   state.currentUser=u;
   state.isAdmin=isAdmin||u.role==='admin';
-  saveSession(u);
+  // Supabase Auth SDK persists the JWT automatically — no saveSession() needed.
   closeAuthModal();
+  // Standalone login page: send back to return URL
+  if(window.location.pathname.endsWith('login.html')){
+    var p=new URLSearchParams(window.location.search);
+    window.location.href=p.get('return')||'index.html';
+    return;
+  }
   if(state.isAdmin){
     // Redirect to admin page
     window.location.href = 'admin.html';
@@ -424,9 +472,9 @@ document.addEventListener('click',function(e){
   if(ud&&hu&&!hu.contains(e.target))ud.style.display='none';
 });
 
-function logout(){
+async function logout(){
+  await db.auth.signOut();
   state.currentUser=null;state.isAdmin=false;state.cart=[];
-  saveSession(null);
   // headerGuest/headerUser/cart UI only exist on pages that reuse the shop
   // header (index.html, membership.html); guard so this also runs safely
   // if ever invoked from admin.html, which has none of this markup.
@@ -885,10 +933,39 @@ async function placeOrder(){
   };
   await dbSaveOrder(order);
   await loadData();
+  // Record tiered referral commission (fire-and-forget)
+  recordReferralCommission(order).catch(function(e){ console.warn('Commission failed:', e); });
   state.cart=[];
   updateCart();
   toast('🎉 订单提交成功！我们将尽快处理您的订单');
   showPage('home');
+}
+
+// ===== REFERRAL COMMISSION RECORDING =====
+// Rate is determined by referrer's membership tier, read from Supabase settings.
+async function recordReferralCommission(order){
+  var u=state.currentUser;
+  if(!u||!u.referredBy) return;
+  var referrerTier='normal';
+  try{
+    var rr=await db.from('users').select('membership').eq('id',String(u.referredBy)).single();
+    if(rr.data&&rr.data.membership) referrerTier=rr.data.membership;
+  }catch(e){}
+  var rateStr=null;
+  try{ rateStr=await dbGetSetting('commission_rate_'+referrerTier); }catch(e){}
+  if(!rateStr){ try{ rateStr=await dbGetSetting('commission_rate_normal'); }catch(e){} }
+  var rate=rateStr?parseFloat(rateStr):0.03;
+  if(rate<=0) return;
+  await dbSaveCommission({
+    id:'COM'+Date.now(),
+    referrerId:String(u.referredBy),
+    referredUserId:String(u.id),
+    orderId:order.id,
+    orderTotal:order.total,
+    commissionRate:rate,
+    commissionAmount:Math.round(order.total*rate*100)/100,
+    createdAt:new Date().toISOString(),
+  });
 }
 
 // ===== MEMBERSHIP UPGRADE/PAYMENT (SIMULATED) =====
@@ -945,41 +1022,50 @@ function toggleMobileNav(){
 }
 
 // ===== INIT =====
-// Step 1 — restore session synchronously so the header renders correctly
-// on the very first paint, before the Supabase fetch completes.
-var restoredUser = restoreSession();
-if(restoredUser){
-  state.currentUser = restoredUser;
-  state.isAdmin = restoredUser.role==='admin';
-}
+(async function(){
+  // 1. Stash ?ref= referral param before anything else
+  checkRefParam();
 
-// Step 2 — show the shop shell immediately (header + skeleton layout) so
-// the page doesn't look blank while we wait for Supabase to respond.
-// Guarded on #shopScreen not #homeProductGrid because membership.html also
-// has the shared header but not the full SPA sections.
-if(document.getElementById('shopScreen')){
-  document.getElementById('shopScreen').classList.add('active');
+  // 2. Restore Supabase Auth session (reads cached JWT, no network wait)
+  var restoredUser = await restoreSession();
   if(restoredUser){
-    document.getElementById('headerGuest').style.display='none';
-    document.getElementById('headerUser').style.display='';
-    document.getElementById('userNameDisplay').textContent=restoredUser.name;
-    document.getElementById('userAvatar').textContent=restoredUser.name[0].toUpperCase();
-    document.getElementById('dropUserEmail').textContent=restoredUser.email||restoredUser.name;
-    var ml0=document.getElementById('mobileLoginLink');
-    var mlo0=document.getElementById('mobileLogoutLink');
-    if(ml0)ml0.style.display='none';
-    if(mlo0)mlo0.style.display='';
+    state.currentUser = restoredUser;
+    state.isAdmin = restoredUser.role==='admin';
   }
-}
 
-// Step 3 — fetch data from Supabase, then render product grids / category
-// counts / cart. Nothing product-related renders until the data is ready,
-// so the category counts never flash a stale "— 款" value.
-initData().then(function(){
+  // 3. Paint header shell immediately
+  if(document.getElementById('shopScreen')){
+    document.getElementById('shopScreen').classList.add('active');
+    if(restoredUser){
+      var hg=document.getElementById('headerGuest');
+      var hu=document.getElementById('headerUser');
+      if(hg) hg.style.display='none';
+      if(hu) hu.style.display='';
+      var nd=document.getElementById('userNameDisplay');
+      var av=document.getElementById('userAvatar');
+      var de=document.getElementById('dropUserEmail');
+      var ml0=document.getElementById('mobileLoginLink');
+      var mlo0=document.getElementById('mobileLogoutLink');
+      if(nd) nd.textContent=restoredUser.name;
+      if(av) av.textContent=restoredUser.name[0].toUpperCase();
+      if(de) de.textContent=restoredUser.email||restoredUser.name;
+      if(ml0) ml0.style.display='none';
+      if(mlo0) mlo0.style.display='';
+    }
+  }
+
+  // 4. Fetch data then render — category counts only appear after load
+  await initData();
   if(document.getElementById('homeProductGrid')){
     renderHomePage();
     updateCategoryCounts();
+    // Hash deep-linking: index.html#wine → show wine category
+    if(window.location.hash){
+      var cat=window.location.hash.replace('#','');
+      if(CATS[cat]) showCategory(cat);
+    }
   }
-  if(document.getElementById('cartItems'))updateCart();
-  if(typeof refreshMembershipPage==='function')refreshMembershipPage();
-});
+  if(document.getElementById('cartItems')) updateCart();
+  if(typeof refreshMembershipPage==='function') refreshMembershipPage();
+  _fireDataReady();
+})();

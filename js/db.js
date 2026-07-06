@@ -153,6 +153,29 @@ async function dbDeleteUsers(ids) {
   if (error) { console.error('dbDeleteUsers:', error); throw error; }
 }
 
+
+// ===== 后台设置 / Settings =====
+
+async function dbGetSettings() {
+  const { data, error } = await db.from('settings').select('*');
+  if (error) { console.error('dbGetSettings:', error); return {}; }
+  const map = {};
+  (data || []).forEach(function(row){ map[row.key] = row.value; });
+  return map;
+}
+
+async function dbGetSetting(key) {
+  const { data, error } = await db.from('settings').select('value').eq('key', key).single();
+  if (error) return null;
+  return data ? data.value : null;
+}
+
+async function dbSetSetting(key, value) {
+  const { error } = await db.from('settings')
+    .upsert({ key: key, value: String(value), updated_at: new Date().toISOString() });
+  if (error) { console.error('dbSetSetting:', error); throw error; }
+}
+
 // ===== 图片上传 =====
 async function dbUploadImage(file) {
   const fileName = Date.now() + '_' + file.name.replace(/\s/g, '_');
