@@ -1,21 +1,5 @@
 <!DOCTYPE html>
-<script>
-// Simple password protection
-// NOTE: this runs before <body> exists. Earlier versions tried
-// document.body.innerHTML (threw "Cannot set properties of null" since
-// body didn't exist yet) and later document.write() (which didn't reliably
-// stop the rest of this file's markup from still being parsed and shown
-// underneath the message in all cases). A hard redirect is the only
-// approach that reliably prevents the protected page content from ever
-// rendering, regardless of browser parsing quirks.
-var ADMIN_PASSWORD = 'admin123'; // Change this!
-var entered = prompt('请输入管理员密码:');
-if (entered !== ADMIN_PASSWORD) {
-  alert('⛔ 访问被拒绝 / Access denied');
-  window.location.href = 'index.html';
-  throw new Error('Access Denied');
-}
-</script>
+<!-- Admin auth handled server-side by admin.js (Supabase Auth + role check) -->
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -307,7 +291,7 @@ if (entered !== ADMIN_PASSWORD) {
     }
   </style>
 </head>
-<body>
+<body style="visibility:hidden;">
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
@@ -320,6 +304,7 @@ if (entered !== ADMIN_PASSWORD) {
     <div class="admin-mobile-nav-item" data-panel="users" onclick="showAdminPanel('users');toggleAdminMobileNav()">👥 用户管理</div>
     <div class="admin-mobile-nav-item" data-panel="revenue" onclick="showAdminPanel('revenue');toggleAdminMobileNav()">📈 收入趋势</div>
     <div class="admin-mobile-nav-item" data-panel="membership" onclick="showAdminPanel('membership');toggleAdminMobileNav()">💎 会员管理</div>
+    <div class="admin-mobile-nav-item" data-panel="referral" onclick="showAdminPanel('referral');toggleAdminMobileNav()">🤝 推荐佣金</div>
     <button class="admin-mobile-nav-logout" onclick="logout()">退出后台</button>
   </div>
 
@@ -337,6 +322,7 @@ if (entered !== ADMIN_PASSWORD) {
         <div class="admin-nav-item" onclick="showAdminPanel('users')"><span class="admin-nav-icon">👥</span>用户管理</div>
         <div class="admin-nav-item" onclick="showAdminPanel('revenue')"><span class="admin-nav-icon">📈</span>收入趋势</div>
         <div class="admin-nav-item" onclick="showAdminPanel('membership')"><span class="admin-nav-icon">💎</span>会员管理</div>
+        <div class="admin-nav-item" onclick="showAdminPanel('referral')"><span class="admin-nav-icon">🤝</span>推荐佣金</div>
       </div>
       <div class="admin-footer">
         <button class="admin-logout" onclick="logout()">退出后台</button>
@@ -355,10 +341,10 @@ if (entered !== ADMIN_PASSWORD) {
       <!-- DASHBOARD -->
       <div class="admin-panel active" id="panel-dashboard">
         <div class="stats-grid">
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('products')"><div class="stat-label">总商品数</div><div class="stat-value" id="statProducts">—</div><div class="stat-change up" id="statProductsChange"></div></div>
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('orders')"><div class="stat-label">总订单数</div><div class="stat-value" id="statOrders">—</div><div class="stat-change up">↑ 本月新增</div></div>
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('users')"><div class="stat-label">注册用户</div><div class="stat-value" id="statUsers">—</div><div class="stat-change up">↑ 持续增长</div></div>
-          <div class="stat-card stat-card-link" onclick="showAdminPanel('revenue')"><div class="stat-label">本月收入</div><div class="stat-value text-gold" id="statRevenue">—</div><div class="stat-change up">已完成订单 · 查看趋势 →</div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('products')"><div class="stat-label">总商品数</div><div class="stat-value" id="statProducts">0</div><div class="stat-change up" id="statProductsChange"></div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('orders')"><div class="stat-label">总订单数</div><div class="stat-value" id="statOrders">0</div><div class="stat-change up">↑ 本月新增</div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('users')"><div class="stat-label">注册用户</div><div class="stat-value" id="statUsers">0</div><div class="stat-change up">↑ 持续增长</div></div>
+          <div class="stat-card stat-card-link" onclick="showAdminPanel('revenue')"><div class="stat-label">本月收入</div><div class="stat-value text-gold" id="statRevenue">¥0</div><div class="stat-change up">已完成订单 · 查看趋势 →</div></div>
         </div>
         <div class="admin-card">
           <div class="admin-card-header"><div class="admin-card-title">各分类商品分布</div></div>
@@ -544,6 +530,81 @@ if (entered !== ADMIN_PASSWORD) {
         </div>
       </div>
 
+      <!-- REFERRAL -->
+      <div class="admin-panel" id="panel-referral">
+
+        <!-- Two-tier commission rate setting -->
+        <div class="admin-card" style="margin-bottom:1.25rem;">
+          <div class="admin-card-header"><div class="admin-card-title">佣金比例设置（按推荐人会员等级）</div></div>
+          <div style="padding:1.5rem;">
+            <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6;">
+              佣金比例取决于<strong>推荐人</strong>的会员等级。下线每笔订单产生时，系统查找推荐人当前等级并套用对应比例。修改后立即生效（存储在数据库中）。
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:1.25rem;" class="tier-admin-grid">
+              <div class="tier-admin-card">
+                <h4>普通会员</h4>
+                <div class="tier-admin-field">
+                  <label>推荐佣金比例（%）</label>
+                  <div style="display:flex;align-items:center;gap:.5rem;">
+                    <input type="number" id="commissionRateNormal" min="0" max="100" step="0.5" placeholder="3">
+                    <span style="color:var(--text-muted);">%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="tier-admin-card">
+                <h4>掌柜</h4>
+                <div class="tier-admin-field">
+                  <label>推荐佣金比例（%）</label>
+                  <div style="display:flex;align-items:center;gap:.5rem;">
+                    <input type="number" id="commissionRateManager" min="0" max="100" step="0.5" placeholder="5">
+                    <span style="color:var(--text-muted);">%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="tier-admin-card">
+                <h4>经销商</h4>
+                <div class="tier-admin-field">
+                  <label>推荐佣金比例（%）</label>
+                  <div style="display:flex;align-items:center;gap:.5rem;">
+                    <input type="number" id="commissionRateDealer" min="0" max="100" step="0.5" placeholder="8">
+                    <span style="color:var(--text-muted);">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="admin-btn admin-btn-gold" onclick="saveCommissionRatesAdmin()">保存所有佣金比例</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" style="margin-bottom:1.25rem;">
+          <div class="stat-card"><div class="stat-label">推荐人数</div><div class="stat-value" id="refAdminReferrers">—</div></div>
+          <div class="stat-card"><div class="stat-label">下线总数</div><div class="stat-value" id="refAdminDownlines">—</div></div>
+          <div class="stat-card"><div class="stat-label">佣金订单数</div><div class="stat-value" id="refAdminOrders">—</div></div>
+          <div class="stat-card"><div class="stat-label">累计佣金总额</div><div class="stat-value text-gold" id="refAdminTotal">—</div></div>
+        </div>
+
+        <!-- Top referrers -->
+        <div class="admin-card" style="margin-bottom:1.25rem;">
+          <div class="admin-card-header"><div class="admin-card-title">推荐人排行</div></div>
+          <div class="orders-table-wrap" id="refTopTable"></div>
+          <div id="refTopCards"></div>
+        </div>
+
+        <!-- Full commission history -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <div class="admin-card-title">全部佣金记录</div>
+            <div class="admin-search">
+              <input type="text" id="refSearchInput" placeholder="搜索推荐人 / 订单号…" oninput="filterRefHistory()">
+            </div>
+          </div>
+          <div class="orders-table-wrap" id="refHistoryAdminTable"></div>
+          <div id="refHistoryAdminCards"></div>
+        </div>
+
+      </div><!-- /panel-referral -->
+
     </main>
   </div><!-- /adminScreen -->
 
@@ -635,7 +696,7 @@ if (entered !== ADMIN_PASSWORD) {
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function() {
-        navigator.serviceWorker.register("/js/sw.js", { scope: "/" }).catch(function(err) {
+        navigator.serviceWorker.register("/sw.js").catch(function(err) {
           console.warn("SW registration failed:", err);
         });
       });

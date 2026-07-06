@@ -75,74 +75,12 @@
 <body>
 
   <div class="toast" id="toast"></div>
-
-  <!-- AUTH MODAL -->
-  <div class="screen" id="authScreen" style="position:fixed;inset:0;z-index:500;background:rgba(10,6,4,0.88);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:1rem;min-height:0;">
-    <div class="auth-box" style="position:relative;">
-      <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
-      <div class="auth-logo">OnePrime</div>
-      <div class="auth-logo-sub">恒旺国际 · 品质生活商城</div>
-      <div id="authLogin">
-        <div class="auth-title">请先登录</div>
-        <div class="auth-sub">登录后查看您的账户信息</div>
-        <div class="auth-divider">使用邮箱登录</div>
-        <input class="auth-input" type="email" id="loginEmail" placeholder="邮箱地址" />
-        <input class="auth-input" type="password" id="loginPwd" placeholder="密码" />
-        <button class="auth-btn" onclick="emailLogin()">登录</button>
-        <div class="auth-toggle">还没有账户？<a onclick="switchAuthMode('register')">立即注册</a></div>
-      </div>
-      <div id="authRegister" class="hidden">
-        <div class="auth-title">创建账户</div>
-        <input class="auth-input" type="text" id="regName" placeholder="姓名" />
-        <input class="auth-input" type="email" id="regEmail" placeholder="邮箱地址" />
-        <input class="auth-input" type="password" id="regPwd" placeholder="密码（至少6位）" />
-        <button class="auth-btn" onclick="emailRegister()">注册</button>
-        <div class="auth-toggle">已有账户？<a onclick="switchAuthMode('login')">返回登录</a></div>
-      </div>
-    </div>
-  </div>
+  <div id="auth-modal-mount"></div>
+  <div id="cart-mount"></div>
 
   <div class="screen active" id="shopScreen">
-    <!-- Header -->
-    <header class="shop-header">
-      <a class="sh-logo" href="index.html">OnePrime<span>恒旺国际</span></a>
-      <ul class="sh-nav">
-        <li><a href="index.html">首页</a></li>
-        <li><a href="index.html">🍷 红酒</a></li>
-        <li><a href="index.html">💊 大健康</a></li>
-        <li><a href="index.html">✨ 美妆护肤</a></li>
-        <li><a href="index.html">🌿 功能性食品</a></li>
-        <li><a href="membership.html" style="color:var(--gold);">💎 会员权益</a></li>
-      </ul>
-      <div class="sh-right">
-        <div id="headerGuest">
-          <button class="nav-login-btn" onclick="openAuthModal()">登录 / 注册</button>
-        </div>
-        <div id="headerUser" style="display:none;position:relative;">
-          <div class="sh-user" onclick="toggleUserDropdown()">
-            <div class="sh-avatar" id="userAvatar">U</div>
-            <span id="userNameDisplay" style="color:rgba(255,255,255,0.6);font-size:.78rem;"></span>
-            <span style="color:rgba(255,255,255,0.3);font-size:.65rem;margin-left:.2rem;">▾</span>
-          </div>
-          <div id="userDropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--deep);border:1px solid rgba(201,168,76,0.2);border-radius:8px;min-width:140px;overflow:hidden;z-index:100;">
-            <div style="padding:.6rem 1rem;font-size:.78rem;color:rgba(255,255,255,0.35);border-bottom:1px solid rgba(255,255,255,0.06);" id="dropUserEmail"></div>
-            <a href="account.html" style="display:block;padding:.7rem 1rem;color:rgba(255,255,255,0.6);font-size:.82rem;text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">👤 我的账户</a>
-            <button onclick="logout()" style="width:100%;text-align:left;padding:.7rem 1rem;background:none;border:none;color:rgba(255,255,255,0.6);font-size:.82rem;cursor:pointer;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">退出登录</button>
-          </div>
-        </div>
-        <button class="ham-btn" onclick="toggleMobileNav()"><span></span><span></span><span></span></button>
-      </div>
-    </header>
-
-    <!-- Mobile Nav -->
-    <div class="mobile-nav" id="mobileNav">
-      <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
-      <a href="index.html">首页</a>
-      <a href="membership.html" style="color:var(--gold);">💎 会员权益</a>
-      <a href="account.html" style="color:var(--gold);">👤 我的账户</a>
-      <a id="mobileLoginLink" onclick="openAuthModal();toggleMobileNav()" style="color:rgba(255,255,255,0.5);font-size:.9rem;">登录 / 注册</a>
-      <a id="mobileLogoutLink" onclick="logout();toggleMobileNav()" style="display:none;color:rgba(255,255,255,0.4);font-size:.85rem;">退出登录</a>
-    </div>
+    <div id="header-mount"></div>
+    <div id="mobile-nav-mount"></div>
 
     <!-- PAGE HERO -->
     <div class="shop-hero" style="padding:50px 5vw 40px;">
@@ -262,13 +200,14 @@
 
   </div><!-- /shopScreen -->
 
-  <script src="js/script.js?v=202507011116"></script>
-  <script src="js/account.js?v=202507011116"></script>
+  <script src="js/components.js?v=202507041200"></script>
+  <script src="js/script.js?v=202507041200"></script>
+  <script src="js/account.js?v=202507041200"></script>
 
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function() {
-        navigator.serviceWorker.register("/js/sw.js", { scope: "/" }).catch(function(err) {
+        navigator.serviceWorker.register("/sw.js").catch(function(err) {
           console.warn("SW registration failed:", err);
         });
       });
