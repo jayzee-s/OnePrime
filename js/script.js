@@ -145,10 +145,10 @@ function getUserMembershipLabel(user){
 // dashboard's revenue figures.
 function getUserCumulativeSpend(userId){
   if(!userId) return 0;
-  var orders = JSON.parse(localStorage.getItem('oneprime_orders')||'[]');
-  return orders
-    .filter(function(o){return o.userId===userId && !o.isDemo;})
-    .reduce(function(s,o){return s+o.total;},0);
+  // Read from state.orders which is loaded from Supabase via loadData()
+  return (state.orders||[])
+    .filter(function(o){ return String(o.userId)===String(userId) && !o.isDemo; })
+    .reduce(function(s,o){ return s+o.total; }, 0);
 }
 
 // Returns the highest tier (by spend threshold) the user qualifies for
