@@ -1165,8 +1165,9 @@ function filterRefHistory() {
 }
 
 // ===== LOGOUT =====
-function logout() {
+async function logout() {
   if (confirm('确定要退出后台吗？')) {
+    try { await db.auth.signOut(); } catch(e) { console.warn('signOut:', e); }
     window.location.href = 'index.html';
   }
 }
