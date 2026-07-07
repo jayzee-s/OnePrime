@@ -5,187 +5,81 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>推荐好友 · OnePrime 恒旺国际</title>
   <link rel="icon" type="image/x-icon" href="img/favicon.ico">
-  <link rel="icon" type="image/png" sizes="16x16" href="img/icon-16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/db.js"></script>
   <link rel="stylesheet" href="css/style.css?v=202507041200">
 </head>
 <body>
-
   <div class="toast" id="toast"></div>
-
-  <!-- ===== AUTH MODAL ===== -->
-  <div class="screen" id="authScreen" style="position:fixed;inset:0;z-index:500;background:rgba(10,6,4,0.88);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:1rem;min-height:0;">
-    <div class="auth-box" style="position:relative;">
-      <button class="auth-modal-close" onclick="closeAuthModal()">✕</button>
-      <div class="auth-logo">OnePrime</div>
-      <div class="auth-logo-sub">恒旺国际 · 品质生活商城</div>
-      <div id="authLogin">
-        <div class="auth-title">Welcome back</div>
-        <div class="auth-sub">登录您的账户继续购物</div>
-        <button class="social-btn" onclick="socialLogin('Google')">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.962L3.964 6.294C4.672 4.167 6.656 3.58 9 3.58z"/></svg>
-          Continue with Google
-        </button>
-        <button class="social-btn" onclick="socialLogin('Apple')">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M14.048 9.368c-.02-1.98 1.622-2.944 1.694-2.99-.924-1.35-2.36-1.535-2.87-1.552-1.22-.124-2.384.72-3.002.72-.618 0-1.573-.704-2.587-.684-1.327.02-2.558.773-3.24 1.96-1.387 2.4-.354 5.962 1 7.908.667.956 1.462 2.032 2.503 1.994 1.007-.04 1.386-.648 2.603-.648 1.217 0 1.558.648 2.616.628 1.083-.02 1.766-.977 2.428-1.937.768-1.107 1.082-2.19 1.1-2.244-.024-.01-2.1-.806-2.123-3.155zm-1.99-5.797c.553-.67.927-1.596.824-2.521-.796.033-1.76.53-2.33 1.199-.51.59-.959 1.53-.84 2.435.89.069 1.793-.453 2.346-1.113z"/></svg>
-          Continue with Apple
-        </button>
-        <button class="social-btn" onclick="socialLogin('Facebook')">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#1877F2" d="M18 9a9 9 0 10-10.406 8.892V11.62H5.31V9h2.284V7.01c0-2.254 1.343-3.5 3.397-3.5.984 0 2.013.176 2.013.176V5.9h-1.134c-1.117 0-1.466.693-1.466 1.404V9h2.495l-.399 2.62H10.4v6.272A9.003 9.003 0 0018 9z"/></svg>
-          Continue with Facebook
-        </button>
-        <div class="auth-divider">或使用邮箱</div>
-        <input class="auth-input" type="email" id="loginEmail" placeholder="邮箱地址" />
-        <input class="auth-input" type="password" id="loginPwd" placeholder="密码" />
-        <button class="auth-btn" onclick="emailLogin()">登录</button>
-        <div class="auth-toggle">还没有账户？<a onclick="switchAuthMode('register')">立即注册</a></div>
-      </div>
-      <div id="authRegister" class="hidden">
-        <div class="auth-title">创建账户</div>
-        <div class="auth-sub">注册获得专属会员权益</div>
-        <input class="auth-input" type="text" id="regName" placeholder="姓名" />
-        <input class="auth-input" type="email" id="regEmail" placeholder="邮箱地址" />
-        <input class="auth-input" type="password" id="regPwd" placeholder="密码（至少6位）" />
-        <button class="auth-btn" onclick="emailRegister()">注册</button>
-        <div class="auth-toggle">已有账户？<a onclick="switchAuthMode('login')">返回登录</a></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cart drawer (keeps cart in sync when navigating back to shop) -->
-  <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
-  <div class="cart-drawer" id="cartDrawer">
-    <div class="cart-head"><h3>购物车</h3><button class="cart-close" onclick="toggleCart()">✕</button></div>
-    <div class="cart-items" id="cartItems"></div>
-    <div class="cart-foot" id="cartFoot"></div>
-  </div>
+  <div id="auth-modal-mount"></div>
+  <div id="cart-mount"></div>
 
   <div class="screen active" id="shopScreen">
-    <header class="shop-header">
-      <a class="sh-logo" href="index.html">OnePrime<span>恒旺国际</span></a>
-      <ul class="sh-nav">
-        <li><a href="index.html">首页</a></li>
-        <li><a href="index.html#wine">🍷 红酒</a></li>
-        <li><a href="index.html#health">💊 大健康</a></li>
-        <li><a href="index.html#beauty">✨ 美妆护肤</a></li>
-        <li><a href="index.html#food">🌿 功能性食品</a></li>
-        <li><a href="membership.html">💎 会员权益</a></li>
-        <li><a class="active" href="referral.html" style="color:var(--gold);">🤝 推荐好友</a></li>
-      </ul>
-      <div class="sh-right">
-        <button class="cart-btn" onclick="toggleCart()">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-          <span class="cart-count" id="cartCount">0</span>
-        </button>
-        <div id="headerGuest">
-          <button class="nav-login-btn" onclick="openAuthModal()">登录 / 注册</button>
-        </div>
-        <div id="headerUser" style="display:none;position:relative;">
-          <div class="sh-user" onclick="toggleUserDropdown()">
-            <div class="sh-avatar" id="userAvatar">U</div>
-            <span id="userNameDisplay" style="color:rgba(255,255,255,0.6);font-size:.78rem;"></span>
-            <span style="color:rgba(255,255,255,0.3);font-size:.65rem;margin-left:.2rem;">▾</span>
-          </div>
-          <div id="userDropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--deep);border:1px solid rgba(201,168,76,0.2);border-radius:8px;min-width:140px;overflow:hidden;z-index:100;">
-            <div style="padding:.6rem 1rem;font-size:.78rem;color:rgba(255,255,255,0.35);border-bottom:1px solid rgba(255,255,255,0.06);" id="dropUserEmail"></div>
-            <a href="account.html" style="display:block;padding:.7rem 1rem;color:rgba(255,255,255,0.6);font-size:.82rem;text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">👤 我的账户</a>
-            <a href="referral.html" style="display:block;padding:.7rem 1rem;color:var(--gold);font-size:.82rem;text-decoration:none;">🤝 推荐好友</a>
-            <button onclick="logout()" style="width:100%;text-align:left;padding:.7rem 1rem;background:none;border:none;color:rgba(255,255,255,0.6);font-size:.82rem;cursor:pointer;">退出登录</button>
-          </div>
-        </div>
-        <button class="ham-btn" onclick="toggleMobileNav()"><span></span><span></span><span></span></button>
-      </div>
-    </header>
+    <div id="header-mount"></div>
+    <div id="mobile-nav-mount"></div>
 
-    <div class="mobile-nav" id="mobileNav">
-      <button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>
-      <a href="index.html">首页</a>
-      <a href="membership.html">💎 会员权益</a>
-      <a href="referral.html" style="color:var(--gold);">🤝 推荐好友</a>
-      <a onclick="toggleCart();toggleMobileNav()" style="color:var(--gold);">🛒 购物车</a>
-      <a id="mobileLoginLink" onclick="openAuthModal();toggleMobileNav()" style="color:rgba(255,255,255,0.5);font-size:.9rem;">登录 / 注册</a>
-      <a id="mobileLogoutLink" onclick="logout();toggleMobileNav()" style="display:none;color:rgba(255,255,255,0.4);font-size:.85rem;">退出登录</a>
-    </div>
-
-    <!-- HERO -->
     <div class="shop-hero" style="padding:60px 5vw 50px;">
       <div style="font-size:.65rem;letter-spacing:.25em;color:var(--gold);margin-bottom:.75rem;">REFERRAL PROGRAMME</div>
       <h1>推荐<em>好友</em>赚佣金</h1>
       <p>邀请好友注册消费，您的下线每笔订单即时为您产生佣金</p>
     </div>
 
-    <!-- NOT LOGGED IN -->
     <div id="refNotLoggedIn" style="display:none;max-width:480px;margin:3rem auto;padding:0 5vw;text-align:center;">
       <div style="font-size:3rem;margin-bottom:1rem;">🤝</div>
       <h2 style="font-family:'Playfair Display',serif;margin-bottom:.75rem;">登录后查看您的推荐信息</h2>
-      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.5rem;">登录账户后，您可以获取专属推荐链接、查看下线列表和佣金记录。</p>
+      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.5rem;">登录后可获取专属推荐链接、查看下线列表和佣金记录。</p>
       <button class="tier-cta" onclick="openAuthModal()" style="max-width:200px;margin:0 auto;display:block;">立即登录</button>
     </div>
 
-    <!-- REFERRAL CONTENT (logged in) -->
     <div id="refContent" style="display:none;max-width:1000px;margin:0 auto;padding:2rem 5vw 4rem;">
 
-      <!-- Referral link card -->
       <div class="ref-link-card">
-        <div class="ref-link-header">
-          <div>
-            <div class="ref-link-title">🔗 我的专属推荐链接</div>
-            <div class="ref-link-desc">朋友通过此链接注册后成为您的下线，他们每笔消费的 <strong id="refRateDisplay">5</strong>% 即时为您积累佣金</div>
-          </div>
-        </div>
-        <div class="ref-link-row">
+        <div class="ref-link-title">🔗 我的专属推荐链接</div>
+        <div class="ref-link-desc">朋友通过此链接注册后成为您的下线，他们每笔消费的 <strong id="refRateDisplay">—</strong>% 即时为您积累佣金</div>
+        <div class="ref-link-row" style="margin-top:1rem;">
           <div class="ref-link-url" id="refLink">生成中…</div>
           <button class="ref-copy-btn" onclick="copyReferralLink()">复制链接</button>
         </div>
         <div class="ref-share-hint">💡 可直接粘贴到微信、朋友圈或发送给朋友</div>
       </div>
 
-      <!-- Stats -->
-      <div class="ref-stats-grid" id="refStats">
+      <div class="ref-stats-grid">
         <div class="ref-stat-card"><div class="ref-stat-value" id="refStatDownlines">—</div><div class="ref-stat-label">已邀请下线</div></div>
         <div class="ref-stat-card"><div class="ref-stat-value text-gold" id="refStatCommission">¥—</div><div class="ref-stat-label">累计佣金</div></div>
         <div class="ref-stat-card"><div class="ref-stat-value" id="refStatOrders">—</div><div class="ref-stat-label">产生佣金订单数</div></div>
       </div>
 
-      <!-- Downlines -->
       <div class="ref-section">
         <div class="ref-section-title">👥 我的下线</div>
-        <div class="admin-card" id="refDownlinesCard">
+        <div class="admin-card">
           <div id="refDownlines" style="padding:1rem 0;"></div>
         </div>
       </div>
 
-      <!-- Commission history -->
       <div class="ref-section">
         <div class="ref-section-title">💰 佣金记录</div>
-        <div class="admin-card" id="refHistoryCard">
+        <div class="admin-card">
           <div class="orders-table-wrap" id="refHistoryTable"></div>
           <div id="refHistoryCards"></div>
         </div>
       </div>
 
       <div class="ref-disclaimer">
-        ⚠️ 本站为演示项目，佣金仅作记录展示，不涉及真实出金流程。单级推荐制度，下线的下线产生的消费不计入您的佣金。
+        ⚠️ 本站为演示项目，佣金仅作记录展示，不涉及真实出金流程。单级推荐，下线的下线不计入您的佣金。
       </div>
-
     </div>
 
-  </div><!-- /shopScreen -->
+  </div>
 
+  <script src="js/components.js?v=202507041200"></script>
   <script src="js/script.js?v=202507041200"></script>
   <script src="js/referral.js?v=202507041200"></script>
-
   <script>
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", function() {
-        navigator.serviceWorker.register("/sw.js").catch(function(err) {
-          console.warn("SW registration failed:", err);
-        });
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js").catch(function(e){ console.warn("SW:", e); });
       });
     }
   </script>
