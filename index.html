@@ -11,8 +11,8 @@
   <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="css/style.css?v=202507011116">
-  <script src="js/db.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=202507071500">
+  <script src="js/db.js?v=202507071500"></script>
 </head>
 <body>
 
@@ -150,17 +150,6 @@
 
   </div><!-- /shopScreen -->
 
-  <!-- ===== CART DRAWER ===== -->
-  <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
-  <div class="cart-drawer" id="cartDrawer">
-    <div class="cart-head">
-      <h3>购物车</h3>
-      <button class="cart-close" onclick="toggleCart()">✕</button>
-    </div>
-    <div class="cart-items" id="cartItems"></div>
-    <div class="cart-foot" id="cartFoot"></div>
-  </div>
-
   <!-- PRODUCT MODAL -->
   <div class="modal-overlay" id="prodModal" onclick="closeProdModal(event)">
     <div class="modal-box" id="prodModalBox">
@@ -169,89 +158,8 @@
     </div>
   </div>
 
-  
-
-  <!-- PRODUCT FORM MODAL -->
-  <div class="form-modal-overlay hidden" id="productFormModal">
-    <div class="form-modal">
-      <div class="fm-header">
-        <div class="fm-title" id="fmTitle">添加商品</div>
-        <button class="fm-close" onclick="closeProductForm()">✕</button>
-      </div>
-      <div class="fm-body">
-        <input type="hidden" id="fmId">
-        <div class="fm-row">
-          <div class="fm-group">
-            <label class="fm-label">商品名称 <em>*</em></label>
-            <input class="fm-input" id="fmName" placeholder="输入商品名称" />
-          </div>
-          <div class="fm-group">
-            <label class="fm-label">英文名称</label>
-            <input class="fm-input" id="fmNameEn" placeholder="Product name in English" />
-          </div>
-        </div>
-        <div class="fm-row full">
-          <div class="fm-group">
-            <label class="fm-label">商品描述 <em>*</em></label>
-            <textarea class="fm-textarea" id="fmDesc" placeholder="详细描述商品特点、成分、使用方法等"></textarea>
-          </div>
-        </div>
-        <div class="fm-row">
-          <div class="fm-group">
-            <label class="fm-label">商品分类 <em>*</em></label>
-            <select class="fm-select" id="fmCat">
-              <option value="wine">🍷 红酒</option>
-              <option value="health">💊 大健康</option>
-              <option value="beauty">✨ 美妆护肤</option>
-              <option value="food">🌿 功能性食品</option>
-            </select>
-          </div>
-          <div class="fm-group">
-            <label class="fm-label">库存数量</label>
-            <input class="fm-input" id="fmStock" type="number" placeholder="0" min="0" />
-          </div>
-        </div>
-        <div class="fm-row">
-          <div class="fm-group">
-            <label class="fm-label">售价（元） <em>*</em></label>
-            <input class="fm-input" id="fmPrice" type="number" placeholder="0.00" step="0.01" />
-          </div>
-          <div class="fm-group">
-            <label class="fm-label">原价（元，可选）</label>
-            <input class="fm-input" id="fmOrigPrice" type="number" placeholder="0.00" step="0.01" />
-          </div>
-        </div>
-        <div class="fm-row full">
-          <div class="fm-group">
-            <label class="fm-label">商品图片</label>
-            <div class="img-upload-area" id="imgUploadArea">
-              <input type="file" id="fmImg" accept="image/*" onchange="handleImgUpload(event)">
-              <div class="img-upload-icon">📷</div>
-              <div class="img-upload-text">点击或拖拽上传图片<br><span style="font-size:.72rem;color:#aaa;">支持 JPG、PNG、WebP，建议正方形，≤ 5MB</span></div>
-            </div>
-            <img id="imgPreview" class="img-preview hidden" />
-            <input type="hidden" id="fmImgData">
-          </div>
-        </div>
-        <div class="fm-row full">
-          <div class="fm-group">
-            <label class="fm-label">上架状态</label>
-            <div class="toggle-wrap">
-              <div class="toggle on" id="fmActiveToggle" onclick="toggleActive()"></div>
-              <span class="toggle-label" id="fmActiveLabel">已上架</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="fm-footer">
-        <button class="admin-btn admin-btn-outline" onclick="closeProductForm()">取消</button>
-        <button class="admin-btn admin-btn-gold" onclick="saveProduct()">保存商品</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="js/components.js?v=202507041200"></script>
-  <script src="js/script.js?v=202507041200"></script>
+  <script src="js/components.js?v=202507071500"></script>
+  <script src="js/script.js?v=202507071500"></script>
 
   <!-- ===== SERVICE WORKER (2-day cache auto-expiry) ===== -->
   <script>

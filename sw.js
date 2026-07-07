@@ -5,7 +5,7 @@
 // HTML pages use network-first so navigation always reflects the latest
 // content even while assets are served from cache.
 
-const CACHE_NAME = 'oneprime-v202507011116';
+const CACHE_NAME = 'oneprime-v202507071500';
 const MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000; // 2 days in milliseconds
 
 // Assets to pre-cache on install (shell resources needed to load any page)
