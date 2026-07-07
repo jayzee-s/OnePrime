@@ -359,9 +359,89 @@ function toast(msg,dur){
 }
 
 // ===== AUTH =====
-function socialLogin(provider){
-  // Social OAuth requires Supabase dashboard → Authentication → Providers setup.
-  toast('社交登录配置中，请使用邮箱登录');
+async function socialLogin(provider){
+  // ── Simulated social login ──
+  // Real OAuth needs Supabase provider config. This sim lets users pick a
+  // display name; a generated email + random password are created in Supabase
+  // Auth so the session is real (JWT, RLS, etc.) — only the email is fake.
+  // Requires: Supabase → Authentication → Settings → "Confirm email" OFF.
+
+  // Reuse or build the inline name-input UI inside the auth modal
+  var loginDiv = document.getElementById('authLogin');
+  if (!loginDiv) return;
+
+  // If sim form already open, remove it first
+  var existing = document.getElementById('socialSimForm');
+  if (existing) existing.remove();
+
+  var providerLabels = {Google:'Google', Apple:'Apple', Facebook:'Facebook'};
+  var label = providerLabels[provider] || provider;
+
+  var simDiv = document.createElement('div');
+  simDiv.id = 'socialSimForm';
+  simDiv.style.cssText = 'margin-top:1rem;padding:1rem;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid rgba(255,255,255,0.1);';
+  simDiv.innerHTML =
+    '<div style="font-size:.78rem;color:rgba(255,255,255,0.5);margin-bottom:.6rem;">以 '+label+' 身份继续 — 请输入您的显示名称</div>' +
+    '<input id="socialSimName" class="auth-input" type="text" placeholder="您的姓名" style="margin-bottom:.6rem;" />' +
+    '<div style="display:flex;gap:.5rem;">' +
+      '<button class="auth-btn" id="socialSimConfirm" style="flex:1;padding:10px;">确认</button>' +
+      '<button style="flex-shrink:0;padding:10px 14px;background:none;border:1px solid rgba(255,255,255,0.15);' +
+        'border-radius:8px;color:rgba(255,255,255,0.4);cursor:pointer;" onclick="document.getElementById('socialSimForm').remove()">取消</button>' +
+    '</div>';
+  loginDiv.appendChild(simDiv);
+
+  var nameInput = document.getElementById('socialSimName');
+  var confirmBtn = document.getElementById('socialSimConfirm');
+  nameInput.focus();
+
+  // Submit on Enter
+  nameInput.addEventListener('keydown', function(e){ if(e.key==='Enter') confirmBtn.click(); });
+
+  confirmBtn.addEventListener('click', async function(){
+    var name = (nameInput.value || '').trim();
+    if (!name) { nameInput.focus(); return; }
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '请稍候…';
+
+    // Generate a unique fake email — clearly a simulation address
+    var fakeEmail = provider.toLowerCase() + '_' + Date.now() + '@sim.oneprime.au';
+    // Random password — user never needs to type it, session is JWT-based
+    var fakePwd = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    try {
+      var su = await db.auth.signUp({ email: fakeEmail, password: fakePwd });
+      if (su.error) { toast(su.error.message); confirmBtn.disabled=false; confirmBtn.textContent='确认'; return; }
+      var authUser = su.data.user;
+      if (!authUser) { toast('注册失败，请重试'); confirmBtn.disabled=false; confirmBtn.textContent='确认'; return; }
+
+      var pendingRef = sessionStorage.getItem('oneprime_pending_ref');
+      if (pendingRef && String(pendingRef)===String(authUser.id)) pendingRef = null;
+
+      const newUser = {
+        id: authUser.id,
+        name: name,
+        email: fakeEmail,
+        provider: provider,
+        role: 'customer',
+        membership: null,
+        referredBy: pendingRef || null,
+        active: true,
+        createdAt: new Date().toISOString()
+      };
+      await dbSaveUser(newUser);
+      sessionStorage.removeItem('oneprime_pending_ref');
+      simDiv.remove();
+      await loadData();
+      loginUser(newUser, false, !newUser.membership);
+    } catch(e) {
+      toast('登录失败：' + e.message);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '确认';
+    }
+  });
 }
 
 async function emailLogin(){
