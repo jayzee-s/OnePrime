@@ -532,7 +532,7 @@ async function renderUsers() {
       var isAdmin = u.role === 'admin';
       var checked = selectedUserIds.indexOf(u.id) !== -1;
       return '<tr>' +
-        '<td><input type="checkbox" class="pac-checkbox" ' + (checked?'checked':'') + ' onchange="toggleUserSelection(' + u.id + ',this.checked)"></td>' +
+        '<td><input type="checkbox" class="pac-checkbox" ' + (checked?'checked':'') + ' onchange="toggleUserSelection(\'' + u.id + '\',this.checked)"></td>' +
         '<td style="font-weight:600;">' + u.name + '</td>' +
         '<td style="font-size:.82rem;color:#7A6850;">' + u.email + '</td>' +
         '<td><span class="badge badge-gold">' + u.provider + '</span></td>' +
@@ -550,7 +550,7 @@ async function renderUsers() {
       var checked = selectedUserIds.indexOf(u.id) !== -1;
       return '<div class="user-admin-card' + (checked ? ' selected' : '') + '">' +
         '<div style="display:flex;align-items:flex-start;gap:.6rem;">' +
-          '<input type="checkbox" class="pac-checkbox" style="margin-top:3px;" ' + (checked?'checked':'') + ' onchange="toggleUserSelection(' + u.id + ',this.checked)">' +
+          '<input type="checkbox" class="pac-checkbox" style="margin-top:3px;" ' + (checked?'checked':'') + ' onchange="toggleUserSelection(\'' + u.id + '\',this.checked)">' +
           '<div>' +
             '<div class="uac-name">' + u.name + '</div>' +
             '<div class="uac-email">' + u.email + '</div>' +
