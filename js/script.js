@@ -1064,7 +1064,7 @@ function getUpgradeCost(targetTierKey){
   return Math.max(0, target.fee - alreadyPaid);
 }
 
-function purchaseMembership(targetTierKey){
+async function purchaseMembership(targetTierKey){
   if(!state.currentUser){ toast('请先登录'); openAuthModal(); return; }
   var tiers = loadMembershipTiers();
   var target = tiers[targetTierKey];
@@ -1079,14 +1079,18 @@ function purchaseMembership(targetTierKey){
   var cost = getUpgradeCost(targetTierKey);
   if(!confirm('（模拟支付）确认支付 ¥'+cost+' '+(current?'补差价升级':'开通')+'为'+target.label+'吗？\n本站未接入真实支付，这里仅模拟扣款流程。')) return;
 
-  var users = JSON.parse(localStorage.getItem('oneprime_users')||'[]');
-  var idx = users.findIndex(function(u){return u.id===state.currentUser.id;});
-  if(idx===-1){ toast('用户数据异常，请重新登录'); return; }
-  users[idx].membership = targetTierKey;
-  users[idx].membershipSince = new Date().toISOString();
-  localStorage.setItem('oneprime_users', JSON.stringify(users));
-  state.currentUser = users[idx];
-  loadData();
+  var updatedUser = Object.assign({}, state.currentUser, {
+    membership: targetTierKey,
+    membershipSince: new Date().toISOString()
+  });
+  try{
+    await dbSaveUser(updatedUser);
+  }catch(e){
+    toast('开通失败：'+e.message);
+    return;
+  }
+  state.currentUser = updatedUser;
+  await loadData();
   toast('🎉 已开通'+target.label+'（模拟支付成功）');
   // Immediately reflect the new tier everywhere relevant — without this,
   // the membership page kept showing the OLD tier/status until a manual
