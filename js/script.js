@@ -386,7 +386,7 @@ async function socialLogin(provider){
     '<div style="display:flex;gap:.5rem;">' +
       '<button class="auth-btn" id="socialSimConfirm" style="flex:1;padding:10px;">确认</button>' +
       '<button style="flex-shrink:0;padding:10px 14px;background:none;border:1px solid rgba(255,255,255,0.15);' +
-        'border-radius:8px;color:rgba(255,255,255,0.4);cursor:pointer;" onclick="document.getElementById('socialSimForm').remove()">取消</button>' +
+        'border-radius:8px;color:rgba(255,255,255,0.4);cursor:pointer;" onclick="document.getElementById(\'socialSimForm\').remove()">取消</button>' +
     '</div>';
   loginDiv.appendChild(simDiv);
 
