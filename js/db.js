@@ -73,6 +73,7 @@ function rowToUser(r) {
     role: r.role || 'customer',
     membership: r.membership || null,
     membershipSince: r.membership_since || null,
+    referredBy: r.referred_by || null,
     active: r.active !== false,
     createdAt: r.created_at,
   };
@@ -86,6 +87,7 @@ function userToRow(u) {
     role: u.role || 'customer',
     membership: u.membership || null,
     membership_since: u.membershipSince || null,
+    referred_by: u.referredBy || null,
     active: u.active !== false,
     created_at: u.createdAt || new Date().toISOString(),
   };
@@ -151,6 +153,70 @@ async function dbSaveUser(user) {
 async function dbDeleteUsers(ids) {
   const { error } = await db.from('users').delete().in('id', ids);
   if (error) { console.error('dbDeleteUsers:', error); throw error; }
+}
+
+// ===== 佣金记录 / Commissions =====
+// (each row = one commission earned on one downline order — separate from
+// the `settings` table which just stores the current rate-per-tier)
+
+function rowToCommission(r) {
+  return {
+    id: r.id,
+    referrerId: r.referrer_id,
+    referredUserId: r.referred_user_id,
+    orderId: r.order_id,
+    orderTotal: Number(r.order_total),
+    commissionRate: Number(r.commission_rate),
+    commissionAmount: Number(r.commission_amount),
+    createdAt: r.created_at,
+  };
+}
+function commissionToRow(c) {
+  return {
+    id: c.id,
+    referrer_id: String(c.referrerId),
+    referred_user_id: String(c.referredUserId),
+    order_id: c.orderId,
+    order_total: c.orderTotal,
+    commission_rate: c.commissionRate,
+    commission_amount: c.commissionAmount,
+    created_at: c.createdAt || new Date().toISOString(),
+  };
+}
+
+// Commissions earned by a specific referrer
+async function dbGetCommissions(referrerId) {
+  const { data, error } = await db.from('commissions')
+    .select('*')
+    .eq('referrer_id', String(referrerId))
+    .order('created_at', { ascending: false });
+  if (error) { console.error('dbGetCommissions:', error); return []; }
+  return (data || []).map(rowToCommission);
+}
+
+// All commissions (for admin view)
+async function dbGetAllCommissions() {
+  const { data, error } = await db.from('commissions')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('dbGetAllCommissions:', error); return []; }
+  return (data || []).map(rowToCommission);
+}
+
+// Save one commission record
+async function dbSaveCommission(commission) {
+  const { error } = await db.from('commissions').upsert(commissionToRow(commission));
+  if (error) { console.error('dbSaveCommission:', error); throw error; }
+}
+
+// Get all users directly referred by a given user
+async function dbGetReferredUsers(referrerId) {
+  const { data, error } = await db.from('users')
+    .select('*')
+    .eq('referred_by', String(referrerId))
+    .order('created_at');
+  if (error) { console.error('dbGetReferredUsers:', error); return []; }
+  return (data || []).map(rowToUser);
 }
 
 
