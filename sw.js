@@ -9,11 +9,16 @@ const CACHE_NAME = 'oneprime-v202507071500';
 const MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000; // 2 days in milliseconds
 
 // Assets to pre-cache on install (shell resources needed to load any page)
+// NOTE: relative paths (no leading "/") — this repo is deployed under a
+// GitHub Pages *project* subpath (e.g. /OnePrime/), not the domain root.
+// A leading "/" would resolve to https://<user>.github.io/css/style.css
+// instead of .../OnePrime/css/style.css, causing every one of these to
+// 404 and cache.addAll() to reject as a whole (it's all-or-nothing).
 const PRECACHE_URLS = [
-  '/css/style.css',
-  '/js/script.js',
-  '/js/admin.js',
-  '/js/membership.js',
+  'css/style.css',
+  'js/script.js',
+  'js/admin.js',
+  'js/membership.js',
 ];
 
 // ===== INSTALL =====
