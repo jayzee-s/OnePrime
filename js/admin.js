@@ -12,10 +12,9 @@ let userSortDir = 'desc'; // 'asc' | 'desc'
 // this entire script from running at all — which previously broke the
 // whole admin dashboard silently. We reuse the shared definition instead.
 
-// NOTE: toast(), loadData(), saveProducts(), saveUsers(), and saveOrders()
-// are already defined in script.js, which is loaded before this file on
-// admin.html. They're intentionally not redefined here to avoid the two
-// copies silently drifting out of sync with each other over time.
+// NOTE: toast() and loadData() are already defined in script.js, which is
+// loaded before this file on admin.html. They're intentionally not
+// redefined here to avoid the two copies silently drifting out of sync.
 
 // ===== UTILITY FUNCTIONS =====
 function statusLabel(s) {
@@ -993,7 +992,7 @@ function syncBoxSelection(tierKey) {
   // fresh from the DOM when the "保存" button is clicked.
 }
 
-function saveMembershipTierEdit(tierKey) {
+async function saveMembershipTierEdit(tierKey) {
   var tiers = loadMembershipTiers();
   var t = tiers[tierKey];
   if (!t) { toast('会员等级不存在'); return; }
@@ -1021,16 +1020,24 @@ function saveMembershipTierEdit(tierKey) {
     if (!isNaN(pid)) boxProductIds.push(pid);
   });
 
-  tiers[tierKey] = Object.assign({}, t, {
-    fee: fee,
-    discount: discount,
-    spendThreshold: threshold,
-    mysteryBoxProductIds: boxProductIds,
-    mysteryBoxValue: boxValue
+  var updatedTiers = Object.assign({}, tiers, {
+    [tierKey]: Object.assign({}, t, {
+      fee: fee,
+      discount: discount,
+      spendThreshold: threshold,
+      mysteryBoxProductIds: boxProductIds,
+      mysteryBoxValue: boxValue
+    })
   });
-  saveMembershipTiers(tiers);
+
+  try {
+    await saveMembershipTiers(updatedTiers);
+  } catch(e) {
+    toast('保存失败：' + e.message);
+    return;
+  }
   renderMembershipAdmin();
-  toast(t.label+' 设置已保存');
+  toast(t.label+' 设置已保存（全站生效）');
 }
 
 

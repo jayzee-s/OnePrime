@@ -1,5 +1,5 @@
 // ===== REFERRAL PAGE =====
-// Depends on script.js (loaded first): state, onDataReady(), loadCommissionRate(),
+// Depends on script.js (loaded first): state, onDataReady(), getCommissionRateForTier(),
 // dbGetCommissions(), dbGetReferredUsers(), toast()
 
 // ── Entry point ──
@@ -21,9 +21,12 @@ async function initReferralPage() {
   if (notLogged) notLogged.style.display = 'none';
   if (content)   content.style.display   = 'block';
 
-  // Show commission rate
+  // Show the commission rate that actually applies to THIS user's own
+  // referrals — depends on their own membership tier (same lookup used by
+  // recordReferralCommission when a downline actually checks out), not a
+  // generic flat rate — so the number shown here always matches reality.
   var rateEl = document.getElementById('refRateDisplay');
-  if (rateEl) rateEl.textContent = Math.round(loadCommissionRate() * 100);
+  if (rateEl) rateEl.textContent = Math.round((await getCommissionRateForTier(u.membership)) * 100);
 
   // Build and display referral link
   var refUrl = buildReferralUrl(u.id);

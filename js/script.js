@@ -41,60 +41,62 @@ const DEFAULT_MEMBERSHIP_TIERS = {
   dealer:    {key:'dealer',   label:'经销商',   fee:999, discount:0.8,  spendThreshold:50000, order:2, mysteryBoxProductIds:[], mysteryBoxValue:999},
 };
 
+// In-memory cache populated once from Supabase (settings table, key
+// 'membership_tiers') during page init — see loadMembershipTiersFromDB()
+// below. loadMembershipTiers() itself stays SYNCHRONOUS because dozens of
+// call sites across script.js/membership.js/account.js/admin.js call it
+// inline while rendering; making it async would require converting all of
+// those to async/await. Falls back to defaults before the cache is ready
+// (very first paint) or if the Supabase fetch ever fails.
+var _membershipTiersCache = null;
+
 function loadMembershipTiers(){
-  var stored = localStorage.getItem('oneprime_membership_tiers');
-  if(!stored){
-    localStorage.setItem('oneprime_membership_tiers', JSON.stringify(DEFAULT_MEMBERSHIP_TIERS));
-    return JSON.parse(JSON.stringify(DEFAULT_MEMBERSHIP_TIERS));
-  }
-  try{
-    var parsed = JSON.parse(stored);
-    // One-time pricing correction: anyone who loaded this site before the
-    // fee schedule changed (99/299/599 -> 199/399/999) has the OLD fees
-    // permanently stuck in their localStorage, since saved data normally
-    // wins over new defaults (intentional, so real admin edits aren't
-    // silently overwritten). We detect specifically the old default fees
-    // (not just "any fee") and migrate only those untouched defaults
-    // forward — an admin who deliberately set a custom fee already
-    // overwrote the old default, so this migration correctly leaves
-    // their edit alone.
-    var oldDefaultFees = {normal:99, manager:299, dealer:599};
-    Object.keys(oldDefaultFees).forEach(function(k){
-      if(parsed[k] && parsed[k].fee===oldDefaultFees[k]){
-        parsed[k].fee = DEFAULT_MEMBERSHIP_TIERS[k].fee;
-      }
-      // Backfill the new mystery-box fields for tiers saved before they existed.
-      if(parsed[k] && parsed[k].mysteryBoxValue===undefined){
-        parsed[k].mysteryBoxValue = DEFAULT_MEMBERSHIP_TIERS[k].mysteryBoxValue;
-      }
-      // Migrate the old single mysteryBoxProductId field into the new
-      // multi-select mysteryBoxProductIds array (admin can now pick
-      // several gift products per tier instead of just one).
-      if(parsed[k] && parsed[k].mysteryBoxProductIds===undefined){
-        if(parsed[k].mysteryBoxProductId){
-          parsed[k].mysteryBoxProductIds = [parsed[k].mysteryBoxProductId];
-        } else {
-          parsed[k].mysteryBoxProductIds = [];
-        }
-      }
-    });
-    localStorage.setItem('oneprime_membership_tiers', JSON.stringify(parsed));
-    // Guard against a corrupted/partial save wiping out a tier
-    return Object.assign({}, DEFAULT_MEMBERSHIP_TIERS, parsed);
-  }catch(e){
-    return JSON.parse(JSON.stringify(DEFAULT_MEMBERSHIP_TIERS));
-  }
+  if(_membershipTiersCache) return _membershipTiersCache;
+  return JSON.parse(JSON.stringify(DEFAULT_MEMBERSHIP_TIERS));
 }
 
-function saveMembershipTiers(tiers){
-  localStorage.setItem('oneprime_membership_tiers', JSON.stringify(tiers));
+// Fetches the real tier config from Supabase once at page load, so every
+// visitor — not just the admin's own browser — sees whatever the admin has
+// configured (previously this lived in localStorage, so admin edits only
+// ever applied to the admin's own device). Missing/legacy fields are
+// backfilled against DEFAULT_MEMBERSHIP_TIERS the same way the old
+// localStorage migration used to.
+async function loadMembershipTiersFromDB(){
+  try{
+    var raw = await dbGetSetting('membership_tiers');
+    var parsed = raw ? JSON.parse(raw) : {};
+    var tiers = {};
+    Object.keys(DEFAULT_MEMBERSHIP_TIERS).forEach(function(k){
+      tiers[k] = Object.assign({}, DEFAULT_MEMBERSHIP_TIERS[k], parsed[k]||{});
+      if(tiers[k].mysteryBoxProductIds===undefined) tiers[k].mysteryBoxProductIds=[];
+    });
+    _membershipTiersCache = tiers;
+  }catch(e){
+    console.warn('loadMembershipTiersFromDB failed, using defaults:', e);
+    _membershipTiersCache = JSON.parse(JSON.stringify(DEFAULT_MEMBERSHIP_TIERS));
+  }
+  return _membershipTiersCache;
+}
+
+// Persists an edited tier config to Supabase (write is admin-only per RLS:
+// settings_admin_write) and updates the in-memory cache immediately so the
+// change is reflected on this page without a reload. Throws on failure so
+// callers (admin.js) can show an error instead of silently no-oping.
+async function saveMembershipTiers(tiers){
+  await dbSetSetting('membership_tiers', JSON.stringify(tiers));
+  _membershipTiersCache = tiers;
 }
 // ===== REFERRAL / COMMISSION HELPERS =====
-function loadCommissionRate(){
-  // Legacy single rate — superseded by tiered DB rates.
-  // Kept so existing referral.js rate display still works.
-  var v = localStorage.getItem('oneprime_commission_rate');
-  return v !== null ? parseFloat(v) : 0.05;
+// Commission rate depends on the REFERRER's own membership tier — set by
+// admin per-tier in Supabase (settings keys commission_rate_normal /
+// commission_rate_manager / commission_rate_dealer). Shared by the actual
+// commission calculation (recordReferralCommission) and the referral
+// page's displayed rate, so the two can never disagree.
+async function getCommissionRateForTier(tierKey){
+  var rateStr=null;
+  try{ rateStr=await dbGetSetting('commission_rate_'+(tierKey||'normal')); }catch(e){}
+  if(!rateStr){ try{ rateStr=await dbGetSetting('commission_rate_normal'); }catch(e){} }
+  return rateStr?parseFloat(rateStr):0.03;
 }
 
 // Called on every page load: stash ?ref= in sessionStorage for registration.
@@ -226,97 +228,14 @@ function getAmountToNextTier(user){
   return {tier: next, remaining: Math.round(remaining*100)/100, spend: spend};
 }
 
-// ===== SAMPLE DATA =====
+// ===== INIT DATA =====
+// Historically seeded sample products/users/orders into localStorage here.
+// Everything now comes from Supabase (see loadData() below), so that
+// seed data was dead code — nothing ever read those localStorage keys back.
+// Demo revenue-chart orders (isDemo:true) now live directly in the
+// Supabase `orders` table instead of being generated client-side.
 function initData(){
-  if(!localStorage.getItem('oneprime_products')){
-    const prods=[
-      {id:1,name:'慕易庄园赤霞珠干红2021',nameEn:'Moui Estate Cabernet Sauvignon 2021',cat:'wine',price:298,origPrice:398,desc:'澳大利亚南澳地区精选赤霞珠葡萄，单宁丰厚，黑浆果与雪松香气交织，陈年12个月于法国橡木桶，适合搭配红肉料理。',stock:120,active:true,img:''},
-      {id:2,name:'慕易庄园西拉礼盒装',nameEn:'Moui Estate Shiraz Gift Box',cat:'wine',price:688,origPrice:888,desc:'双瓶礼盒装，精选2019年份西拉，深紫色泽，黑胡椒与紫罗兰香气层次丰富，余味悠长，馈赠佳品。',stock:48,active:true,img:''},
-      {id:3,name:'慕易庄园霞多丽干白',nameEn:'Moui Estate Chardonnay',cat:'wine',price:198,origPrice:258,desc:'清爽干白，绿苹果与柑橘香气，口感清新，略带矿物质风味，适合搭配海鲜及轻食料理。',stock:80,active:true,img:''},
-      {id:13,name:'慕易庄园黑皮诺2020',nameEn:'Moui Estate Pinot Noir 2020',cat:'wine',price:328,origPrice:428,desc:'精选维多利亚州凉爽产区黑皮诺，红色樱桃与玫瑰花香，单宁柔顺，余味带一丝烟熏橡木气息。',stock:65,active:true,img:''},
-      {id:14,name:'慕易庄园起泡酒礼盒',nameEn:'Moui Estate Sparkling Gift Box',cat:'wine',price:228,origPrice:298,desc:'传统法式工艺酿造起泡酒，气泡细腻持久，柑橘与白桃香气，适合庆典及节日聚餐场合。',stock:90,active:true,img:''},
-      {id:15,name:'慕易庄园麝香甜白2022',nameEn:'Moui Estate Moscato 2022',cat:'wine',price:168,origPrice:218,desc:'低酒精度甜白葡萄酒，荔枝与白花香气浓郁，口感甜润清爽，适合搭配甜点或单独饮用。',stock:100,active:true,img:''},
-      {id:4,name:'Swisse 护肝片 120粒',nameEn:'Swisse Liver Detox 120 Tabs',cat:'health',price:188,origPrice:248,desc:'澳洲Swisse明星产品，含水飞蓟素+朝鲜蓟提取物，帮助肝脏排毒修复，适合经常饮酒及熬夜人群。',stock:200,active:true,img:''},
-      {id:5,name:'Blackmores 鱼油胶囊 400粒',nameEn:'Blackmores Omega-3 Fish Oil 400',cat:'health',price:298,origPrice:368,desc:'深海鱼油，富含EPA和DHA，支持心脑血管健康，改善关节灵活性，澳洲药房销量第一品牌。',stock:150,active:true,img:''},
-      {id:6,name:'Swisse 胶原蛋白液 500ml',nameEn:'Swisse Beauty Collagen Liquid',cat:'health',price:228,origPrice:298,desc:'口服胶原蛋白，含10,000mg水解胶原蛋白+维生素C，助力肌肤弹性与光泽，草莓口味，口感宜人。',stock:90,active:true,img:''},
-      {id:16,name:'Blackmores 综合维生素 200粒',nameEn:'Blackmores Multivitamin 200 Tabs',cat:'health',price:168,origPrice:218,desc:'全面补充日常所需维生素与矿物质，提升免疫力，缓解疲劳，适合工作繁忙人群长期服用。',stock:180,active:true,img:''},
-      {id:17,name:'Swisse 钙片+维生素D 150粒',nameEn:'Swisse Calcium + Vitamin D3 150 Tabs',cat:'health',price:148,origPrice:188,desc:'高吸收率钙片配方，添加维生素D3促进钙质吸收，强健骨骼，适合中老年及术后恢复人群。',stock:130,active:true,img:''},
-      {id:18,name:'Bioglan 蔓越莓精华胶囊 60粒',nameEn:'Bioglan Cranberry Extract 60 Caps',cat:'health',price:138,origPrice:178,desc:'浓缩蔓越莓精华，辅助维护泌尿系统健康，天然植物配方，女性日常保养首选。',stock:140,active:true,img:''},
-      {id:7,name:'Aesop 玫瑰臀部护理霜',nameEn:'Aesop Resurrection Aromatique',cat:'beauty',price:368,origPrice:null,desc:'澳洲Aesop经典款，含乳木果油与玫瑰提取物，深度滋润干燥肌肤，香气优雅持久。',stock:60,active:true,img:''},
-      {id:8,name:'Jurlique 玫瑰水面膜套装',nameEn:'Jurlique Rose Water Mask Set',cat:'beauty',price:488,origPrice:628,desc:'来自澳洲南澳有机玫瑰园，温和补水保湿面膜4片装，适合各种肤质，敏感肌友好配方。',stock:75,active:true,img:''},
-      {id:9,name:'True Natural 美白精华液',nameEn:'True Natural Brightening Serum',cat:'beauty',price:288,origPrice:358,desc:'含烟酰胺+VC衍生物，提亮肤色，淡化色斑，澳洲有机认证原料，无防腐剂配方。',stock:110,active:true,img:''},
-      {id:19,name:'Jurlique 玫瑰晚安修复精油',nameEn:'Jurlique Rose Night Repair Oil',cat:'beauty',price:528,origPrice:678,desc:'富含玫瑰果油及维生素E，夜间深层修复肌肤屏障，淡化细纹，唤醒晨间紧致光泽肌肤。',stock:55,active:true,img:''},
-      {id:20,name:'Aesop 洁净舒缓洁面乳',nameEn:'Aesop Purifying Facial Cleanser',cat:'beauty',price:298,origPrice:null,desc:'温和洁面配方，含茶树及柳树皮萃取物，深层清洁同时舒缓肌肤，适合油性及混合性肌肤。',stock:85,active:true,img:''},
-      {id:21,name:'True Natural 复合酸去角质精华',nameEn:'True Natural AHA/BHA Exfoliating Serum',cat:'beauty',price:258,origPrice:328,desc:'果酸+水杨酸温和配方，加速角质代谢，改善肌肤纹理及毛孔粗大问题，新手建议夜间使用。',stock:95,active:true,img:''},
-      {id:10,name:'澳洲蜂蜜坚果燕麦棒 10支',nameEn:'Aussie Honey Nut Oat Bar 10pcs',cat:'food',price:88,origPrice:118,desc:'麦卢卡蜂蜜+澳洲坚果+整粒燕麦，低GI健康零食，无人工色素防腐剂，适合健身人群随身携带。',stock:300,active:true,img:''},
-      {id:11,name:'胶原蛋白软糖 60粒',nameEn:'Collagen Beauty Gummies 60pcs',cat:'food',price:128,origPrice:158,desc:'每粒含500mg胶原蛋白+维E+葡萄籽提取物，草莓风味，边吃边美容，Z世代爆款。',stock:240,active:true,img:''},
-      {id:12,name:'益生菌代餐奶昔 15包',nameEn:'Probiotic Meal Shake 15 Sachets',cat:'food',price:258,origPrice:318,desc:'高蛋白低卡路里，含20亿益生菌+膳食纤维，香草奶昔口味，健康代餐首选。',stock:160,active:true,img:''},
-      {id:22,name:'麦卢卡蜂蜜 UMF15+ 500g',nameEn:'Manuka Honey UMF15+ 500g',cat:'food',price:368,origPrice:458,desc:'新西兰进口麦卢卡蜂蜜，UMF15+高活性认证，天然抗氧化，可直接食用或冲泡蜂蜜水。',stock:70,active:true,img:''},
-      {id:23,name:'藜麦即食杯 6杯装',nameEn:'Quinoa Ready-to-Eat Cups 6pcs',cat:'food',price:108,origPrice:138,desc:'三色藜麦搭配杂蔬，即开即食，高纤低脂，办公室加餐或代餐的便捷健康选择。',stock:200,active:true,img:''},
-      {id:24,name:'综合莫林果干坚果包 12袋',nameEn:'Mixed Berry & Nut Trail Mix 12 Packs',cat:'food',price:98,origPrice:128,desc:'蓝莓干、蔓越莓干与澳洲坚果混合装，无添加蔗糖，独立小包装方便携带，健康解馋零食。',stock:260,active:true,img:''},
-    ];
-    localStorage.setItem('oneprime_products',JSON.stringify(prods));
-  }
-  if(!localStorage.getItem('oneprime_users')){
-    localStorage.setItem('oneprime_users',JSON.stringify([
-      {id:1,name:'管理员',email:'admin@oneprime.com.au',provider:'email',role:'admin',createdAt:new Date().toISOString(),active:true,membership:null},
-    ]));
-  }
-  if(!localStorage.getItem('oneprime_orders')){
-    const now=Date.now();
-    const realOrders=[
-      {id:'ORD2025001',userId:2,userName:'张小姐',items:[{name:'慕易庄园赤霞珠',qty:2,price:298}],total:596,status:'completed',createdAt:new Date(now-86400000*3).toISOString()},
-      {id:'ORD2025002',userId:3,userName:'李先生',items:[{name:'Swisse 护肝片',qty:1,price:188}],total:188,status:'shipped',createdAt:new Date(now-86400000*1).toISOString()},
-      {id:'ORD2025003',userId:4,userName:'王女士',items:[{name:'胶原蛋白软糖',qty:3,price:128}],total:384,status:'processing',createdAt:new Date(now-3600000).toISOString()},
-    ];
-    localStorage.setItem('oneprime_orders',JSON.stringify(realOrders.concat(generateDemoRevenueOrders(now))));
-  }
   return loadData();
-}
-
-// Generates ~2 years of fake "completed" orders purely so the 收入趋势
-// (revenue trend) chart has enough spread to demonstrate day/month/year
-// breakdowns before real order volume builds up. Every one of these is
-// tagged isDemo:true and given a "DEMO" id prefix + a userName suffix of
-// "（示例）" so it's unmistakable as sample data wherever it surfaces —
-// the dashboard's 总订单数/本月收入/最近订单 all explicitly filter these
-// out (see refreshAdminDashboard in admin.js), so they only ever appear
-// inside the revenue chart itself.
-function generateDemoRevenueOrders(now){
-  const demo=[];
-  const demoBuyers=['示例买家A','示例买家B','示例买家C','示例买家D'];
-  const sampleItems=[
-    {name:'慕易庄园赤霞珠干红2021',price:298},
-    {name:'Blackmores 鱼油胶囊',price:298},
-    {name:'Jurlique 玫瑰水面膜套装',price:488},
-    {name:'胶原蛋白软糖',price:128},
-    {name:'麦卢卡蜂蜜 UMF15+',price:368},
-  ];
-  let counter=1;
-  // Spread roughly 2-5 orders per month across the past 24 months so
-  // "按日/按月/按年" all have multiple buckets to render.
-  for(let monthsAgo=23;monthsAgo>=0;monthsAgo--){
-    const orderCount=2+Math.floor(Math.random()*4); // 2-5 per month
-    for(let j=0;j<orderCount;j++){
-      const d=new Date(now);
-      d.setMonth(d.getMonth()-monthsAgo);
-      d.setDate(1+Math.floor(Math.random()*27));
-      d.setHours(Math.floor(Math.random()*23),Math.floor(Math.random()*59));
-      const item=sampleItems[Math.floor(Math.random()*sampleItems.length)];
-      const qty=1+Math.floor(Math.random()*3);
-      demo.push({
-        id:'DEMO'+String(counter++).padStart(4,'0'),
-        userId:null,
-        userName:demoBuyers[Math.floor(Math.random()*demoBuyers.length)]+'（示例）',
-        items:[{name:item.name,qty:qty,price:item.price}],
-        total:item.price*qty,
-        status:'completed',
-        createdAt:d.toISOString(),
-        isDemo:true,
-      });
-    }
-  }
-  return demo;
 }
 
 async function loadData() {
@@ -346,10 +265,6 @@ async function restoreSession(){
   }catch(e){ console.warn('restoreSession:', e); return null; }
 }
 
-function saveProducts(){localStorage.setItem('oneprime_products',JSON.stringify(state.products));}
-function saveUsers(){localStorage.setItem('oneprime_users',JSON.stringify(state.users));}
-function saveOrders(){localStorage.setItem('oneprime_orders',JSON.stringify(state.orders));}
-
 // ===== TOAST =====
 function toast(msg,dur){
   dur = dur || 2800;
@@ -365,7 +280,41 @@ async function socialLogin(provider){
   // display name; a generated email + random password are created in Supabase
   // Auth so the session is real (JWT, RLS, etc.) — only the email is fake.
   // Requires: Supabase → Authentication → Settings → "Confirm email" OFF.
+  //
+  // The generated fake identity (email + password) is remembered in
+  // localStorage per provider, so clicking "Continue with Google" again
+  // later logs back into the SAME simulated account instead of creating a
+  // brand new one every time (which is what a real OAuth provider would do
+  // too — same provider, same device, same account).
+  var providerLabels = {Google:'Google', Apple:'Apple', Facebook:'Facebook'};
+  var label = providerLabels[provider] || provider;
+  var storageKey = 'oneprime_sim_identity_' + provider.toLowerCase();
 
+  // ── Try to resume a previously-created simulated identity first ──
+  var savedRaw = localStorage.getItem(storageKey);
+  if (savedRaw) {
+    var saved = null;
+    try { saved = JSON.parse(savedRaw); } catch(e) {}
+    if (saved && saved.email && saved.password) {
+      try {
+        var signInRes = await db.auth.signInWithPassword({ email: saved.email, password: saved.password });
+        if (!signInRes.error) {
+          var pr = await db.from('users').select('*').eq('id', signInRes.data.user.id).single();
+          if (!pr.error && pr.data) {
+            await loadData();
+            loginUser(rowToUser(pr.data));
+            return;
+          }
+        }
+      } catch(e) { /* fall through to re-create below */ }
+      // Saved identity no longer works (deleted from Supabase, etc.) —
+      // forget it so we don't keep retrying a dead account.
+      localStorage.removeItem(storageKey);
+    }
+  }
+
+  // ── No saved identity (or it went stale) — ask for a display name and
+  // create a fresh simulated account ──
   // Reuse or build the inline name-input UI inside the auth modal
   var loginDiv = document.getElementById('authLogin');
   if (!loginDiv) return;
@@ -373,9 +322,6 @@ async function socialLogin(provider){
   // If sim form already open, remove it first
   var existing = document.getElementById('socialSimForm');
   if (existing) existing.remove();
-
-  var providerLabels = {Google:'Google', Apple:'Apple', Facebook:'Facebook'};
-  var label = providerLabels[provider] || provider;
 
   var simDiv = document.createElement('div');
   simDiv.id = 'socialSimForm';
@@ -433,6 +379,11 @@ async function socialLogin(provider){
       };
       await dbSaveUser(newUser);
       sessionStorage.removeItem('oneprime_pending_ref');
+
+      // Remember this identity so the NEXT click of "Continue with
+      // <provider>" resumes the same account instead of creating another.
+      localStorage.setItem(storageKey, JSON.stringify({ email: fakeEmail, password: fakePwd }));
+
       simDiv.remove();
       await loadData();
       loginUser(newUser, false, !newUser.membership);
@@ -1031,10 +982,7 @@ async function recordReferralCommission(order){
     var rr=await db.from('users').select('membership').eq('id',String(u.referredBy)).single();
     if(rr.data&&rr.data.membership) referrerTier=rr.data.membership;
   }catch(e){}
-  var rateStr=null;
-  try{ rateStr=await dbGetSetting('commission_rate_'+referrerTier); }catch(e){}
-  if(!rateStr){ try{ rateStr=await dbGetSetting('commission_rate_normal'); }catch(e){} }
-  var rate=rateStr?parseFloat(rateStr):0.03;
+  var rate = await getCommissionRateForTier(referrerTier);
   if(rate<=0) return;
   await dbSaveCommission({
     id:'COM'+Date.now(),
@@ -1139,7 +1087,7 @@ function toggleMobileNav(){
   }
 
   // 4. Fetch data then render — category counts only appear after load
-  await initData();
+  await Promise.all([initData(), loadMembershipTiersFromDB()]);
   if(document.getElementById('homeProductGrid')){
     renderHomePage();
     updateCategoryCounts();

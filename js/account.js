@@ -115,9 +115,6 @@ async function saveProfile() {
   try {
     await dbSaveUser(updated);
     state.currentUser = updated;
-    // Refresh session
-    var stored = localStorage.getItem('oneprime_session_user_id');
-    if (stored) localStorage.setItem('oneprime_session_user_id', String(updated.id));
     // Update header display name
     var nd = document.getElementById('userNameDisplay');
     var av = document.getElementById('userAvatar');
