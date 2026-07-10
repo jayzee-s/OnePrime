@@ -76,6 +76,10 @@ function rowToUser(r) {
     referredBy: r.referred_by || null,
     active: r.active !== false,
     createdAt: r.created_at,
+    // 默认收货信息 — 结算页自动带入，个人信息页可编辑
+    defaultPhone: r.default_phone || '',
+    defaultCity: r.default_city || '',
+    defaultAddr: r.default_addr || '',
   };
 }
 function userToRow(u) {
@@ -90,6 +94,9 @@ function userToRow(u) {
     referred_by: u.referredBy || null,
     active: u.active !== false,
     created_at: u.createdAt || new Date().toISOString(),
+    default_phone: u.defaultPhone || null,
+    default_city: u.defaultCity || null,
+    default_addr: u.defaultAddr || null,
   };
 }
 

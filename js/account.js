@@ -104,6 +104,13 @@ function renderProfile() {
   document.getElementById('acctProvider').value =
     ({email:'邮箱注册', Google:'Google 登录', Apple:'Apple 登录', Facebook:'Facebook 登录'})[u.provider] || u.provider;
   document.getElementById('acctJoined').value = fmtAcctDate(u.createdAt);
+  // 默认收货信息 — 结算页会自动读取这几个字段
+  var phEl = document.getElementById('acctPhone');
+  var ctEl = document.getElementById('acctCity');
+  var adEl = document.getElementById('acctAddr');
+  if (phEl) phEl.value = u.defaultPhone || '';
+  if (ctEl) ctEl.value = u.defaultCity || '';
+  if (adEl) adEl.value = u.defaultAddr || '';
 }
 
 async function saveProfile() {
@@ -111,7 +118,15 @@ async function saveProfile() {
   if (!u) return;
   var newName = document.getElementById('acctName').value.trim();
   if (!newName) { toast('姓名不能为空'); return; }
-  var updated = Object.assign({}, u, { name: newName });
+  var phone = (document.getElementById('acctPhone') || {}).value || '';
+  var city  = (document.getElementById('acctCity')  || {}).value || '';
+  var addr  = (document.getElementById('acctAddr')  || {}).value || '';
+  var updated = Object.assign({}, u, {
+    name: newName,
+    defaultPhone: phone.trim(),
+    defaultCity: city.trim(),
+    defaultAddr: addr.trim()
+  });
   try {
     await dbSaveUser(updated);
     state.currentUser = updated;

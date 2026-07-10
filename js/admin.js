@@ -326,9 +326,12 @@ async function renderOrders() {
         '<td><span class="order-status os-' + o.status + '">' + statusLabel(o.status) + '</span></td>' +
         '<td style="font-size:.75rem;color:#7A6850;">' + fmtDate(o.createdAt) + '</td>' +
         '<td>' +
+        '<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">' +
         '<select class="filter-select" style="font-size:.72rem;padding:4px 8px;" onchange="updateOrderStatus(\'' + o.id + '\',this.value)">' +
         ['pending','processing','shipped','completed','cancelled'].map(function(s) { return '<option value="' + s + '" ' + (s === o.status ? 'selected' : '') + '>' + statusLabel(s) + '</option>'; }).join('') +
         '</select>' +
+        '<button class="td-btn td-edit" onclick="editOrderAddress(\'' + o.id + '\')">编辑地址</button>' +
+        '</div>' +
         '</td>' +
         '</tr>';
     }).join('');
@@ -355,6 +358,7 @@ async function renderOrders() {
           '<span class="order-status os-' + o.status + '">' + statusLabel(o.status) + '</span>' +
           '<span class="oac-time">' + fmtDate(o.createdAt) + '</span>' +
           '<select class="oac-status-select" onchange="updateOrderStatus(\'' + o.id + '\',this.value)">' + statusOptions + '</select>' +
+          '<button class="td-btn td-edit" onclick="editOrderAddress(\'' + o.id + '\')">编辑地址</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -450,6 +454,29 @@ async function updateOrderStatus(id, status) {
   if (document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')) {
     await refreshAdminDashboard();
   }
+}
+
+// 编辑订单收货地址/电话 — 客户下单时填错、或需要临时改地址时用。
+// 用简单的 prompt() 弹窗而不是新建一个完整表单弹层，足够应付这个低频操作。
+async function editOrderAddress(id) {
+  var order = state.orders.find(function(o) { return o.id === id; });
+  if (!order) { toast('订单不存在'); return; }
+
+  var newPhone = prompt('收货手机号：', order.phone || '');
+  if (newPhone === null) return; // 用户取消
+  var newAddress = prompt('收货地址（省市区+详细地址）：', order.address || '');
+  if (newAddress === null) return; // 用户取消
+
+  newPhone = newPhone.trim();
+  newAddress = newAddress.trim();
+  if (!newPhone || !newAddress) { toast('手机号和地址不能为空'); return; }
+
+  var updatedOrder = Object.assign({}, order, { phone: newPhone, address: newAddress });
+  try {
+    await dbSaveOrder(updatedOrder);
+    toast('收货信息已更新 ✓');
+  } catch(e) { toast('更新失败：' + e.message); return; }
+  await renderOrders();
 }
 
 // ===== USERS =====

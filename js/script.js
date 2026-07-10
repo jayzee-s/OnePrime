@@ -12,6 +12,8 @@ let state = {
   productPage: 1,
   productsPerPage: 10,
   pendingCheckout: false, // set when a guest clicks 去结算 — login first, then continue to checkout
+  productsLoaded: false, // true once the first Supabase products fetch completes — lets
+                         // the product grid distinguish "still loading" from "genuinely empty"
 };
 
 const CATS = {
@@ -242,6 +244,7 @@ async function loadData() {
   state.products = await dbGetProducts();
   state.orders  = await dbGetOrders();
   state.users   = await dbGetUsers();
+  state.productsLoaded = true;
 }
 
 // ===== SESSION PERSISTENCE =====
@@ -627,7 +630,15 @@ function updateCategoryCounts(){
 // ===== PRODUCT GRID =====
 function renderProductGrid(container,prods){
   if(!prods.length){
-    container.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="ei">📦</div><h3>暂无商品</h3><p>该分类下暂无上架商品</p></div>';
+    // Distinguish "Supabase hasn't returned data yet" (user clicked a
+    // category very fast before the fetch finished) from "this category
+    // genuinely has no active products" — showing "暂无商品" in the former
+    // case was misleading and looked like a bug.
+    if(!state.productsLoaded){
+      container.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="ei">⏳</div><h3>加载中…</h3><p>商品正在加载，请稍候</p></div>';
+    } else {
+      container.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="ei">📦</div><h3>暂无商品</h3><p>该分类下暂无上架商品</p></div>';
+    }
     return;
   }
   container.innerHTML=prods.map(function(p){
@@ -934,6 +945,15 @@ function renderCheckout(){
   if(u){
     const n=document.getElementById('ck-name');
     if(n&&!n.value)n.value=u.name||'';
+    // Auto-fill from the user's saved default shipping info (set on the
+    // 个人信息 profile page) so returning customers don't have to
+    // retype address/phone on every single order.
+    const ph=document.getElementById('ck-phone');
+    const ct=document.getElementById('ck-city');
+    const ad=document.getElementById('ck-addr');
+    if(ph&&!ph.value&&u.defaultPhone)ph.value=u.defaultPhone;
+    if(ct&&!ct.value&&u.defaultCity)ct.value=u.defaultCity;
+    if(ad&&!ad.value&&u.defaultAddr)ad.value=u.defaultAddr;
   }
 }
 
@@ -963,6 +983,15 @@ async function placeOrder(){
     createdAt:new Date().toISOString(),
   };
   await dbSaveOrder(order);
+  // Remember this shipping info as the new default so next time the
+  // customer checks out, these fields are pre-filled automatically —
+  // fire-and-forget, shouldn't block the order confirmation.
+  var updatedDefaults = Object.assign({}, state.currentUser, {
+    defaultPhone: phone, defaultCity: city, defaultAddr: addr
+  });
+  dbSaveUser(updatedDefaults).then(function(){
+    state.currentUser = updatedDefaults;
+  }).catch(function(e){ console.warn('保存默认收货信息失败:', e); });
   await loadData();
   // Record tiered referral commission (fire-and-forget)
   recordReferralCommission(order).catch(function(e){ console.warn('Commission failed:', e); });
