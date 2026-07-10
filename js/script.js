@@ -259,7 +259,7 @@ async function restoreSession(){
     var res = await db.auth.getSession();
     if(!res.data.session) return null;
     var uid = res.data.session.user.id;
-    var pr = await db.from('users').select('*').eq('id', uid).single();
+    var pr = await db.from('users').select('*').eq('id', uid).maybeSingle();
     if(pr.error || !pr.data) return null;
     return rowToUser(pr.data);
   }catch(e){ console.warn('restoreSession:', e); return null; }
@@ -299,7 +299,7 @@ async function socialLogin(provider){
       try {
         var signInRes = await db.auth.signInWithPassword({ email: saved.email, password: saved.password });
         if (!signInRes.error) {
-          var pr = await db.from('users').select('*').eq('id', signInRes.data.user.id).single();
+          var pr = await db.from('users').select('*').eq('id', signInRes.data.user.id).maybeSingle();
           if (!pr.error && pr.data) {
             await loadData();
             loginUser(rowToUser(pr.data));
@@ -404,7 +404,7 @@ async function emailLogin(){
   try{
     var res=await db.auth.signInWithPassword({email:email,password:pwd});
     if(res.error){toast('邮箱或密码错误');return;}
-    var pr=await db.from('users').select('*').eq('id',res.data.user.id).single();
+    var pr=await db.from('users').select('*').eq('id',res.data.user.id).maybeSingle();
     if(pr.error||!pr.data){toast('用户信息加载失败，请重试');return;}
     await loadData();
     loginUser(rowToUser(pr.data));
@@ -979,7 +979,7 @@ async function recordReferralCommission(order){
   if(!u||!u.referredBy) return;
   var referrerTier='normal';
   try{
-    var rr=await db.from('users').select('membership').eq('id',String(u.referredBy)).single();
+    var rr=await db.from('users').select('membership').eq('id',String(u.referredBy)).maybeSingle();
     if(rr.data&&rr.data.membership) referrerTier=rr.data.membership;
   }catch(e){}
   var rate = await getCommissionRateForTier(referrerTier);

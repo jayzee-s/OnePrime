@@ -231,7 +231,7 @@ async function dbGetSettings() {
 }
 
 async function dbGetSetting(key) {
-  const { data, error } = await db.from('settings').select('value').eq('key', key).single();
+  const { data, error } = await db.from('settings').select('value').eq('key', key).maybeSingle();
   if (error) return null;
   return data ? data.value : null;
 }

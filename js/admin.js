@@ -1186,7 +1186,7 @@ async function logout() {
     var sr=await db.auth.getSession();
     if(!sr.data.session){ alert('请先登录'); window.location.href='index.html'; return; }
     var uid=sr.data.session.user.id;
-    var pr=await db.from('users').select('role').eq('id',uid).single();
+    var pr=await db.from('users').select('role').eq('id',uid).maybeSingle();
     if(pr.error||!pr.data||pr.data.role!=='admin'){ alert('⛔ 您没有管理员权限'); window.location.href='index.html'; return; }
   }catch(e){ alert('认证失败，请重新登录'); window.location.href='index.html'; return; }
   document.body.style.visibility='visible';
