@@ -31,6 +31,19 @@
       '>' + label + '</a></li>';
   }
 
+  // Category links need different behavior depending on where they're
+  // rendered: on the home page itself, clicking should switch category
+  // in-place (call showCategory() — no reload, matches index.html's own
+  // SPA behavior). From any other page (membership/referral/account/login),
+  // there's no category-switching UI loaded, so it has to be a real
+  // navigation back to index.html first.
+  function navCat(catKey, label) {
+    if (page === 'home') {
+      return '<li><a onclick="showCategory(\'' + catKey + '\')" data-page="' + catKey + '">' + label + '</a></li>';
+    }
+    return '<li><a href="index.html#' + catKey + '">' + label + '</a></li>';
+  }
+
   // ─── Auth Modal ───────────────────────────────────────────────
   var authMount = document.getElementById('auth-modal-mount');
   if (authMount) {
@@ -99,10 +112,10 @@
         '<a class="sh-logo" href="index.html">OnePrime<span>恒旺国际</span></a>' +
         '<ul class="sh-nav">' +
           navA('index.html',      '首页',         'home') +
-          navA('index.html#wine',   '🍷 红酒',     '') +
-          navA('index.html#health', '💊 大健康',   '') +
-          navA('index.html#beauty', '✨ 美妆护肤', '') +
-          navA('index.html#food',   '🌿 功能性食品','') +
+          navCat('wine',   '🍷 红酒') +
+          navCat('health', '💊 大健康') +
+          navCat('beauty', '✨ 美妆护肤') +
+          navCat('food',   '🌿 功能性食品') +
           navA('membership.html', '💎 会员权益',   'membership', page==='membership'?'color:var(--gold);':'') +
           navA('referral.html',   '🤝 推荐好友',   'referral',   page==='referral'  ?'color:var(--gold);':'') +
         '</ul>' +
@@ -150,10 +163,22 @@
   // ─── Mobile Nav ───────────────────────────────────────────────
   var mobileNavMount = document.getElementById('mobile-nav-mount');
   if (mobileNavMount) {
+    // Same reasoning as navCat() above: only call showCategory() directly
+    // when already on the home page; otherwise navigate to index.html first.
+    function mobileNavCat(catKey, label) {
+      if (page === 'home') {
+        return '<a onclick="showCategory(\'' + catKey + '\');toggleMobileNav()">' + label + '</a>';
+      }
+      return '<a href="index.html#' + catKey + '">' + label + '</a>';
+    }
     mobileNavMount.innerHTML =
       '<div class="mobile-nav" id="mobileNav">' +
         '<button class="mobile-nav-close" onclick="toggleMobileNav()">✕</button>' +
         '<a href="index.html">首页</a>' +
+        mobileNavCat('wine',   '🍷 红酒') +
+        mobileNavCat('health', '💊 大健康') +
+        mobileNavCat('beauty', '✨ 美妆护肤') +
+        mobileNavCat('food',   '🌿 功能性食品') +
         '<a href="membership.html"' + (page==='membership' ? ' style="color:var(--gold);"' : '') + '>💎 会员权益</a>' +
         '<a href="referral.html"'  + (page==='referral'   ? ' style="color:var(--gold);"' : '') + '>🤝 推荐好友</a>' +
         '<a href="account.html"'   + (page==='account'    ? ' style="color:var(--gold);"' : '') + '>👤 我的账户</a>' +
