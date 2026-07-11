@@ -781,6 +781,12 @@ tr:hover td{background:rgba(0,0,0,.01);}
 }
 
 /* Commission history table responsive */
+/* Bug fix: these card-list <div>s had no default display:none, so on any
+   screen wider than 600px they rendered as plain visible blocks stacked
+   directly underneath the desktop <table> — showing both at once. They
+   should only ever be visible on narrow screens (see the 600px query
+   below which explicitly turns them on). */
+#refTopCards, #refHistoryCards, #refHistoryAdminCards { display:none; }
 @media(max-width:900px){
   .ref-stats-grid{grid-template-columns:repeat(3,1fr);}
   /* commission history: show cards, hide table */
