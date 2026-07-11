@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=202507081030">
+  <link rel="stylesheet" href="css/style.css?v=202507100930">
   <style>
     /* Admin-specific overrides */
     body{background:#F0EDE8;}
@@ -305,6 +305,7 @@
     <div class="admin-mobile-nav-item" data-panel="revenue" onclick="showAdminPanel('revenue');toggleAdminMobileNav()">📈 收入趋势</div>
     <div class="admin-mobile-nav-item" data-panel="membership" onclick="showAdminPanel('membership');toggleAdminMobileNav()">💎 会员管理</div>
     <div class="admin-mobile-nav-item" data-panel="referral" onclick="showAdminPanel('referral');toggleAdminMobileNav()">🤝 推荐佣金</div>
+    <div class="admin-mobile-nav-item" onclick="window.location.href='index.html'">🏠 返回前台商城</div>
     <button class="admin-mobile-nav-logout" onclick="logout()">退出后台</button>
   </div>
 
@@ -325,6 +326,7 @@
         <div class="admin-nav-item" onclick="showAdminPanel('referral')"><span class="admin-nav-icon">🤝</span>推荐佣金</div>
       </div>
       <div class="admin-footer">
+        <button class="admin-logout" style="margin-bottom:.6rem;background:rgba(201,168,76,0.08);border-color:rgba(201,168,76,0.25);color:#C9A84C;" onclick="window.location.href='index.html'">🏠 返回前台商城</button>
         <button class="admin-logout" onclick="logout()">退出后台</button>
       </div>
     </nav>
@@ -687,10 +689,42 @@
     </div>
   </div>
 
+  <!-- ORDER ADDRESS EDIT MODAL -->
+  <!-- 用真正的表单弹窗代替 window.prompt() —— 部分安卓 WebView（包括打包出
+       的 App 壳）对连续调用 prompt() 支持不稳定，第二个弹窗经常不出现或
+       直接返回空值，导致编辑静默失败。 -->
+  <div class="form-modal-overlay hidden" id="orderAddressModal">
+    <div class="form-modal" style="max-width:480px;">
+      <div class="fm-header">
+        <div class="fm-title">编辑收货信息</div>
+        <button class="fm-close" onclick="closeOrderAddressModal()">✕</button>
+      </div>
+      <div class="fm-body">
+        <input type="hidden" id="oamOrderId">
+        <div class="fm-row full">
+          <div class="fm-group">
+            <label class="fm-label">收货手机号 <em>*</em></label>
+            <input class="fm-input" id="oamPhone" placeholder="手机号码" />
+          </div>
+        </div>
+        <div class="fm-row full">
+          <div class="fm-group">
+            <label class="fm-label">收货地址 <em>*</em></label>
+            <textarea class="fm-textarea" id="oamAddress" placeholder="省市区 + 详细地址"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="fm-footer">
+        <button class="admin-btn admin-btn-outline" onclick="closeOrderAddressModal()">取消</button>
+        <button class="admin-btn admin-btn-gold" onclick="saveOrderAddress()">保存</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/db.js?v=202507081030"></script>
-  <script src="js/script.js?v=202507081030"></script>
-  <script src="js/admin.js?v=202507081030"></script>
+  <script src="js/db.js?v=202507100930"></script>
+  <script src="js/script.js?v=202507100930"></script>
+  <script src="js/admin.js?v=202507100930"></script>
 
   <!-- ===== SERVICE WORKER (2-day cache auto-expiry) ===== -->
   <script>
