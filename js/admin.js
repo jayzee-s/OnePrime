@@ -457,18 +457,29 @@ async function updateOrderStatus(id, status) {
 }
 
 // 编辑订单收货地址/电话 — 客户下单时填错、或需要临时改地址时用。
-// 用简单的 prompt() 弹窗而不是新建一个完整表单弹层，足够应付这个低频操作。
-async function editOrderAddress(id) {
+// 用真正的表单弹窗，而不是 window.prompt() —— 部分安卓 WebView（尤其是打
+// 包出的 App 壳）对连续调用 prompt() 支持不稳定，第二个弹窗经常直接不出
+// 现或返回空值，导致编辑静默失败、看起来"只弹出一个框"。
+function editOrderAddress(id) {
+  var order = state.orders.find(function(o) { return o.id === id; });
+  if (!order) { toast('订单不存在'); return; }
+  document.getElementById('oamOrderId').value = id;
+  document.getElementById('oamPhone').value = order.phone || '';
+  document.getElementById('oamAddress').value = order.address || '';
+  document.getElementById('orderAddressModal').classList.remove('hidden');
+}
+
+function closeOrderAddressModal() {
+  document.getElementById('orderAddressModal').classList.add('hidden');
+}
+
+async function saveOrderAddress() {
+  var id = document.getElementById('oamOrderId').value;
   var order = state.orders.find(function(o) { return o.id === id; });
   if (!order) { toast('订单不存在'); return; }
 
-  var newPhone = prompt('收货手机号：', order.phone || '');
-  if (newPhone === null) return; // 用户取消
-  var newAddress = prompt('收货地址（省市区+详细地址）：', order.address || '');
-  if (newAddress === null) return; // 用户取消
-
-  newPhone = newPhone.trim();
-  newAddress = newAddress.trim();
+  var newPhone = document.getElementById('oamPhone').value.trim();
+  var newAddress = document.getElementById('oamAddress').value.trim();
   if (!newPhone || !newAddress) { toast('手机号和地址不能为空'); return; }
 
   var updatedOrder = Object.assign({}, order, { phone: newPhone, address: newAddress });
@@ -476,6 +487,7 @@ async function editOrderAddress(id) {
     await dbSaveOrder(updatedOrder);
     toast('收货信息已更新 ✓');
   } catch(e) { toast('更新失败：' + e.message); return; }
+  closeOrderAddressModal();
   await renderOrders();
 }
 

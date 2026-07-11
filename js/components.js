@@ -148,6 +148,8 @@
               '<a href="referral.html" style="display:block;padding:.7rem 1rem;color:rgba(255,255,255,0.6);' +
                   'font-size:.82rem;text-decoration:none;"' +
                   ' onmouseover="this.style.color=\'var(--gold)\'" onmouseout="this.style.color=\'rgba(255,255,255,0.6)\'">🤝 推荐好友</a>' +
+              '<a id="headerAdminLink" href="admin.html" style="display:none;padding:.7rem 1rem;color:var(--gold);' +
+                  'font-size:.82rem;text-decoration:none;font-weight:600;border-top:1px solid rgba(255,255,255,0.06);">⚙ 管理后台</a>' +
               '<button onclick="logout()" style="width:100%;text-align:left;padding:.7rem 1rem;' +
                   'background:none;border:none;color:rgba(255,255,255,0.6);font-size:.82rem;cursor:pointer;"' +
                   ' onmouseover="this.style.color=\'var(--gold)\'" onmouseout="this.style.color=\'rgba(255,255,255,0.6)\'">退出登录</button>' +
@@ -183,6 +185,7 @@
         '<a href="referral.html"'  + (page==='referral'   ? ' style="color:var(--gold);"' : '') + '>🤝 推荐好友</a>' +
         '<a href="account.html"'   + (page==='account'    ? ' style="color:var(--gold);"' : '') + '>👤 我的账户</a>' +
         '<a onclick="toggleCart();toggleMobileNav()" style="cursor:pointer;">🛒 购物车</a>' +
+        '<a id="mobileAdminLink" href="admin.html" style="display:none;color:var(--gold);font-weight:600;">⚙ 管理后台</a>' +
         '<a id="mobileLoginLink" onclick="openAuthModal();toggleMobileNav()" ' +
             'style="color:rgba(255,255,255,0.5);font-size:.9rem;">登录 / 注册</a>' +
         '<a id="mobileLogoutLink" onclick="logout();toggleMobileNav()" ' +

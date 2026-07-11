@@ -526,6 +526,7 @@ async function logout(){
   const mlo=document.getElementById('mobileLogoutLink');
   if(ml)ml.style.display='';
   if(mlo)mlo.style.display='none';
+  updateAdminLinkVisibility();
   // renderHomePage()/showPage() need the full shop SPA markup (only on
   // index.html) — membership.html reuses the header but has none of the
   // page-home/page-category/page-checkout sections.
@@ -544,6 +545,17 @@ function switchAuthMode(mode){
 }
 
 // ===== SCREENS =====
+// 只有管理员账号才能看到头部/移动导航里的"⚙ 管理后台"入口 —— 让已登录的
+// 管理员在浏览前台商城时，也能一键跳回后台，不用像之前那样只能靠登录那
+// 一瞬间的强制跳转，或者在没有地址栏的 App 壳里被困在某一边出不来。
+function updateAdminLinkVisibility(){
+  var isAdminUser = !!(state.currentUser && state.currentUser.role === 'admin');
+  var hd = document.getElementById('headerAdminLink');
+  var md = document.getElementById('mobileAdminLink');
+  if(hd) hd.style.display = isAdminUser ? 'block' : 'none';
+  if(md) md.style.display = isAdminUser ? 'block' : 'none';
+}
+
 function showShopScreen(){
   const shopScreen=document.getElementById('shopScreen');
   if(shopScreen)shopScreen.classList.add('active');
@@ -559,6 +571,7 @@ function showShopScreen(){
     if(ml)ml.style.display='none';
     if(mlo)mlo.style.display='';
   }
+  updateAdminLinkVisibility();
   // renderHomePage()/showPage()/updateCategoryCounts() touch elements
   // (#homeProductGrid, #page-home, #page-category, #page-checkout) that
   // only exist on index.html's full shop SPA markup — guard so this
@@ -1113,6 +1126,7 @@ function toggleMobileNav(){
       if(ml0) ml0.style.display='none';
       if(mlo0) mlo0.style.display='';
     }
+    updateAdminLinkVisibility();
   }
 
   // 4. Fetch data then render — category counts only appear after load
